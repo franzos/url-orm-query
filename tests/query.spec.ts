@@ -52,16 +52,62 @@ describe('Query', () => {
             ],
             relations: [
                 {
-                    name: 'organizations'
+                    name: 'organization'
                 }
             ]
         })
-        console.log(query)
-        console.log(query.toTypeOrmQuery())
         const userRepository = db.getRepository(User)
         const user = await userRepository.findOne(query.toTypeOrmQuery())
-
         expect(user.firstName).toBe(usersSeed[0].firstName)
         expect(user.organization).toBeDefined()
+    })
+
+    it('filter by username NOT', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'firstName',
+                    operator: Operator.NOT,
+                    value: 'Some'
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery())
+        for (const user of users) {
+            expect(user.firstName).not.toBe('Some')
+        }
+    })
+
+    it('filter by username LIKE', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'firstName',
+                    operator: Operator.LIKE,
+                    value: 'Som'
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery())
+        for (const user of users) {
+            expect(user.firstName).toBe('Some')
+        }
+    })
+
+    it('list users, limit to 1', async () => {
+        const query = new ApiQueryOptions<User>({
+            limit: 1,
+            relations: [
+                {
+                    name: 'organization'
+                }
+            ]
+        })
+        const userRepository = db.getRepository(User)
+        const user = await userRepository.find(query.toTypeOrmQuery())
+        expect(user.length).toBe(1)
+        expect(user[0].organization).toBeDefined()
     })
 })

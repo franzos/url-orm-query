@@ -7,5 +7,5 @@ export const seed = async (connection: DataSource) => {
     const userRepository = connection.getRepository(User)
 
     const organizations = await organizationRepository.save(oranizationsSeed)
-    await userRepository.save(usersSeed.map(user => ({ ...user, organizations: organizations[0] })))
+    await userRepository.save(usersSeed.map(user => ({ ...user, organization: organizations[0] })))
 }

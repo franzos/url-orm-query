@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest --watchAll",
+    "test": "jest",
+    "test:watch": "jest --watchAll",
     "typeorm": "./node_modules/.bin/typeorm-ts-node-esm -d tests/utils/ormconfig.ts"
   },
   "keywords": [],

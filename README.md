@@ -8,6 +8,13 @@ This library makes it easy to pass query params from front-end, via URL query pa
 - More type safety
 - Validation
 
+## Supported Operators
+
+- EQUAL
+- NOT
+- LIKE
+- ILIKE
+
 # Usage
 
 Frontent:
@@ -39,7 +46,7 @@ const user = await userRepository.findOne(query)
 Run tests:
 
 ```bash
-docker-compose up
+docker-compose up --abort-on-container-exit
 ```
 
 Cleanup:

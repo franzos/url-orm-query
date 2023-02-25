@@ -1,4 +1,4 @@
-import { FindManyOptions } from "typeorm";
+import { FindManyOptions, ILike, Like, Not } from "typeorm";
 import { Operator, Join } from "./enums";
 import { Where, Relation, QueryParams } from "./query-params";
 
@@ -60,8 +60,8 @@ export class ApiQueryOptions<T> {
         return '?' + params.join('&');
     }
 
-    fromUrl(string) {
-        const params = new URLSearchParams(string);
+    fromUrl(queryString: string) {
+        const params = new URLSearchParams(queryString);
         for (const [key, value] of params) {
             switch (key) {
                 case 'filters':
@@ -104,17 +104,38 @@ export class ApiQueryOptions<T> {
                     query.where = {};
                 }
                 const key = filter.key as string
-                query.where[key] = filter.value
+                switch (filter.operator) {
+                    case Operator.EQUAL:
+                        query.where[key] = filter.value;
+                        break;
+                    case Operator.NOT:
+                        query.where[key] = Not(filter.value);
+                        break;
+                    case Operator.LIKE:
+                        query.where[key] = Like(`%${filter.value}%`);
+                        break;
+                    case Operator.ILIKE:
+                        query.where[key] = ILike(`%${filter.value}%`);
+                        break;
+                    default:
+                        throw new Error(`Unknown operator: ${filter.operator}`);
+                }
             }
         }
         if (this.params.relations.length > 0) {
             for (const relation of this.params.relations) {
                 if (!query.relations) {
-                    query.relations = [];
+                    query.relations = {};
                 }
                 const name = relation.name as string
                 query.relations[name] = true
             }
+        }
+        if (this.params.limit) {
+            query.take = this.params.limit;
+        }
+        if (this.params.offset) {
+            query.skip = this.params.offset;
         }
         return query;
     }

@@ -14,7 +14,7 @@ export interface Relation<T> {
 }
 
 export class QueryParams<T> {
-    where: Where<T>[];
+    where?: Where<T>[];
     relations?: Relation<T>[];
     limit?: number;
     offset?: number;
