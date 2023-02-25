@@ -1,4 +1,4 @@
-import { FindManyOptions, ILike, Like, Not } from "typeorm";
+import { Any, Between, FindManyOptions, ILike, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not } from "typeorm";
 import { Operator, Join } from "./enums";
 import { Where, Relation, QueryParams } from "./query-params";
 
@@ -116,6 +116,31 @@ export class ApiQueryOptions<T> {
                         break;
                     case Operator.ILIKE:
                         query.where[key] = ILike(`%${filter.value}%`);
+                        break;
+                    case Operator.BETWEEN:
+                        const value = (filter.value as string).split(',')
+                        if (value.length !== 2) {
+                            throw new Error(`Invalid value for BETWEEN operator: ${filter.value}`);
+                        }
+                        query.where[key] = Between(value[0], value[1]);
+                        break;
+                    case Operator.IN:
+                        query.where[key] = In((filter.value as string).split(','));
+                        break;
+                    case Operator.ANY:
+                        query.where[key] = Any((filter.value as string).split(','));
+                        break;
+                    case Operator.LESS_THAN:
+                        query.where[key] = LessThan(filter.value);
+                        break;
+                    case Operator.LESS_THAN_OR_EQUAL:
+                        query.where[key] = LessThanOrEqual(filter.value);
+                        break;
+                    case Operator.MORE_THAN:
+                        query.where[key] = MoreThan(filter.value);
+                        break;
+                    case Operator.MORE_THAN_OR_EQUAL:
+                        query.where[key] = MoreThanOrEqual(filter.value);
                         break;
                     default:
                         throw new Error(`Unknown operator: ${filter.operator}`);

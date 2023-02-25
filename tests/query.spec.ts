@@ -96,6 +96,100 @@ describe('Query', () => {
         }
     })
 
+    it('filter by age BETWEEN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.BETWEEN,
+                    value: '20,22'
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery())
+        for (const user of users) {
+            expect(user.firstName).toBe('Some')
+        }
+    })
+
+    it('filter by age IN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'firstName',
+                    operator: Operator.IN,
+                    value: 'Some'
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery())
+        expect(users.length).toBe(1)
+    })
+
+    it('filter by firstName IN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'firstName',
+                    operator: Operator.IN,
+                    value: 'Some,Another'
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery())
+        expect(users.length).toBe(2)
+    })
+
+    it('filter by age LESS_THAN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.LESS_THAN,
+                    value: '22'
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery())
+        expect(users.length).toBe(1)
+        expect(users[0].firstName).toBe('Some')
+    })
+
+    it('filter by age LESS_THAN_OR_EQUAL', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.LESS_THAN_OR_EQUAL,
+                    value: '21'
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery())
+        expect(users.length).toBe(1)
+        expect(users[0].firstName).toBe('Some')
+    })
+
+    it('filter by age LESS_THAN_OR_EQUAL - no result', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.LESS_THAN_OR_EQUAL,
+                    value: '20'
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery())
+        expect(users.length).toBe(0)
+    })
+
     it('list users, limit to 1', async () => {
         const query = new ApiQueryOptions<User>({
             limit: 1,

@@ -2,18 +2,25 @@
 
 This library makes it easy to pass query params from front-end, via URL query params, to a TypeORM backend.
 
-**WIP**: There are still a bunch of issues including:
-
-- Support for more operators
-- More type safety
-- Validation
-
 ## Supported Operators
 
 - EQUAL
 - NOT
 - LIKE
 - ILIKE
+- BETWEEN
+- IN
+- ANY
+- LESS_THAN
+- LESS_THAN_OR_EQUAL
+- MORE_THAN
+- MORE_THAN_OR_EQUAL
+
+## TODO
+
+- Support for more operators
+- Type safety
+- Validation
 
 # Usage
 
