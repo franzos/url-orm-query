@@ -34,7 +34,10 @@ const query = new ApiQueryOptions<User>({
             operator: Operator.EQUAL,
             value: 'Some'
         }
-    ]
+    ],
+    relations: ['organization'],
+    limit: 10
+    offset: 0
 }).toUrl()
 ```
 
