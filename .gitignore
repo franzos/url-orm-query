@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.nuxt
+dist
+.env
+deploy.sh
+.vscode
+*.scm
+!template.deploy.do.scm
+
+.cli.*
+server/cli/
+lerna-debug.log
