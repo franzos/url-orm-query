@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Organization } from './organization';
+import { USER_ROLE } from './user-roles';
 
 @Entity()
 export class User {
@@ -18,17 +19,12 @@ export class User {
     @Column()
     email: string;
 
+    @Column({
+        type: 'enum',
+        enum: USER_ROLE
+    })
+    role: USER_ROLE;
+
     @ManyToOne(type => Organization)
     organization: Organization;
 }
-
-function getParams<T>(params: Partial<T>) {
-    return params;
-}
-
-const result = getParams<User>({
-    firstName: 'Some',
-    lastName: 'One',
-    age: 21,
-
-});

@@ -1,27 +1,56 @@
-export const oranizationsSeed = [
+import { Organization, User } from "../entities"
+import { USER_ROLE } from "../entities/user-roles"
+
+export const oranizationsSeed: Partial<Organization>[] = [
     {
-        name: 'Some Organization',
-        type: 'Test',
+        name: 'Truper Corp.',
+        type: 'Limited',
+        address: {
+            city: 'New York',
+            country: 'USA',
+        }
     },
     {
-        name: 'Another Organization',
-        type: 'Test',
+        name: 'Krogith Inc.',
+        type: 'Public',
+        address: {
+            city: 'Lisbon',
+            country: 'Portugal',
+        }
+    },
+    {
+        name: 'Pence Corp.',
+        type: 'Limited',
+        address: {
+            city: 'Tokyo',
+            country: 'Japan',
+        }
     }
 ]
 
-export const usersSeed = [
+export const usersSeed: Partial<User>[]  = [
     {
-        firstName: 'Some',
-        lastName: 'One',
+        firstName: 'Amias',
+        lastName: 'Fito',
         age: 21,
-        email: 'some.one@gmail.com',
+        email: 'amias.fito@gmail.com',
+        role: USER_ROLE.EMPLOYEE,
         organization: undefined,
     },
     {
-        firstName: 'Another',
-        lastName: 'One',
+        firstName: 'Perce',
+        lastName: 'Fito',
         age: 48,
-        email: 'another.one@gmail.com',
+        email: 'perce.fito@gmail.com',
+        role: USER_ROLE.EMPLOYEE,
+        organization: undefined,
+    },
+    {
+        firstName: 'Stine',
+        lastName: 'Aarti',
+        age: 28,
+        email: 'stine.aarti@gmail.com',
+        role: USER_ROLE.MANAGER,
         organization: undefined,
     },
 ]

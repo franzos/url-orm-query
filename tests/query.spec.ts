@@ -15,7 +15,7 @@ describe('Query', () => {
     })
 
     it('filter by username (url)', async () => {
-        const url = '?filters=firstName~EQUAL~Some&limit=10'
+        const url = '?filters=firstName~EQUAL~Amias&limit=10'
         const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQuery()
         
         const userRepository = db.getRepository(User)
@@ -30,7 +30,7 @@ describe('Query', () => {
                 {
                     key: 'firstName',
                     operator: Operator.EQUAL,
-                    value: 'Some'
+                    value: 'Amias'
                 }
             ]
         }).toTypeOrmQuery()
@@ -47,7 +47,7 @@ describe('Query', () => {
                 {
                     key: 'firstName',
                     operator: Operator.EQUAL,
-                    value: 'Some'
+                    value: 'Amias'
                 }
             ],
             relations: [
@@ -68,14 +68,14 @@ describe('Query', () => {
                 {
                     key: 'firstName',
                     operator: Operator.NOT,
-                    value: 'Some'
+                    value: 'Amias'
                 }
             ],
         })
         const userRepository = db.getRepository(User)
         const users = await userRepository.find(query.toTypeOrmQuery())
         for (const user of users) {
-            expect(user.firstName).not.toBe('Some')
+            expect(user.firstName).not.toBe('Amias')
         }
     })
 
@@ -85,14 +85,14 @@ describe('Query', () => {
                 {
                     key: 'firstName',
                     operator: Operator.LIKE,
-                    value: 'Som'
+                    value: 'Ami'
                 }
             ],
         })
         const userRepository = db.getRepository(User)
         const users = await userRepository.find(query.toTypeOrmQuery())
         for (const user of users) {
-            expect(user.firstName).toBe('Some')
+            expect(user.firstName).toBe('Amias')
         }
     })
 
@@ -109,7 +109,7 @@ describe('Query', () => {
         const userRepository = db.getRepository(User)
         const users = await userRepository.find(query.toTypeOrmQuery())
         for (const user of users) {
-            expect(user.firstName).toBe('Some')
+            expect(user.firstName).toBe('Amias')
         }
     })
 
@@ -119,7 +119,7 @@ describe('Query', () => {
                 {
                     key: 'firstName',
                     operator: Operator.IN,
-                    value: 'Some'
+                    value: 'Amias'
                 }
             ],
         })
@@ -134,7 +134,7 @@ describe('Query', () => {
                 {
                     key: 'firstName',
                     operator: Operator.IN,
-                    value: 'Some,Another'
+                    value: 'Amias,Perce'
                 }
             ],
         })
@@ -156,7 +156,7 @@ describe('Query', () => {
         const userRepository = db.getRepository(User)
         const users = await userRepository.find(query.toTypeOrmQuery())
         expect(users.length).toBe(1)
-        expect(users[0].firstName).toBe('Some')
+        expect(users[0].firstName).toBe('Amias')
     })
 
     it('filter by age LESS_THAN_OR_EQUAL', async () => {
@@ -172,7 +172,7 @@ describe('Query', () => {
         const userRepository = db.getRepository(User)
         const users = await userRepository.find(query.toTypeOrmQuery())
         expect(users.length).toBe(1)
-        expect(users[0].firstName).toBe('Some')
+        expect(users[0].firstName).toBe('Amias')
     })
 
     it('filter by age LESS_THAN_OR_EQUAL - no result', async () => {

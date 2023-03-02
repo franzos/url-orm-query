@@ -71,5 +71,5 @@ docker-compose down
 Create a new migration (replace 'initial' with the name of the migration):
 
 ```bash
-pnpm run typeorm migration:generate tests/migrations/initial
+docker-compose run app pnpm run typeorm migration:generate tests/migrations/initial
 ```

@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Address } from './address';
 
 @Entity()
 export class Organization {
@@ -10,4 +11,9 @@ export class Organization {
 
     @Column()
     type: string;
+
+    @Column({
+        type: 'jsonb',
+    })
+    address: Address
 }
