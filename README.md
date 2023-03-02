@@ -4,12 +4,14 @@ This library makes it easy to pass query params from front-end, via URL query pa
 
 ## Supported Operators
 
-- EQUAL
-- NOT
+Depends on whether you use find options or query builder (qb).
+
+- EQUAL (qb)
+- NOT (qb)
 - LIKE
 - ILIKE
 - BETWEEN
-- IN
+- IN (qb)
 - ANY
 - LESS_THAN
 - LESS_THAN_OR_EQUAL
@@ -23,6 +25,13 @@ This library makes it easy to pass query params from front-end, via URL query pa
 - Validation
 
 # Usage
+
+Typeorm supports two approaches:
+
+1. Find options: https://typeorm.io/find-options
+2. Query builder: https://typeorm.io/select-query-builder
+
+Option 1 is more convinient but does not support querying JSONB: https://github.com/typeorm/typeorm/issues/2256
 
 Frontent:
 
@@ -41,6 +50,8 @@ const query = new ApiQueryOptions<User>({
 }).toUrl()
 ```
 
+## Find options
+
 Backend:
 
 ```typescript
@@ -50,6 +61,21 @@ const userRepository = db.getRepository(User)
 const user = await userRepository.findOne(query)
 ```
 
+## Query builder
+
+Backend:
+
+```typescript
+const url = '?filters=firstName~EQUAL~Some'
+const query = new ApiQueryOptions<User>().fromUrl(url).toTypeormQueryBuilder(db.getRepository(Organization))
+const user = await query.getOne()
+```
+
+All filter options:
+
+```
+?filters=firstName~EQUAL~Some?relations=organization&limit=10&offset=0
+```
 
 # Tests
 

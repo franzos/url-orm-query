@@ -1,6 +1,7 @@
-import { Any, Between, FindManyOptions, ILike, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not } from "typeorm";
+import { Any, Between, EntityMetadata, FindManyOptions, ILike, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, Repository } from "typeorm";
 import { Operator, Join } from "./enums";
 import { Where, Relation, QueryParams } from "./query-params";
+import { columnMeta, isRelation, operatorValue, splitQueryKey } from "./typeorm-operators";
 
 export class ApiQueryOptions<T> {
     public params: QueryParams<T>
@@ -96,54 +97,33 @@ export class ApiQueryOptions<T> {
         return this
     }
 
-    toTypeOrmQuery() {
+    /**
+     * Typeorm find query (not using query builder)
+     * - supports a depth of 2; for ex. (organization.)address.street
+     * - Does not support jsonb
+     * @param entityMeta 
+     * @returns 
+     */
+    toTypeOrmQuery(entityMeta: EntityMetadata) {
         let query: FindManyOptions<T> = {};
         if (this.params.where.length > 0) {
             for (const filter of this.params.where) {
                 if (!query.where) {
                     query.where = {};
                 }
-                const key = filter.key as string
-                switch (filter.operator) {
-                    case Operator.EQUAL:
-                        query.where[key] = filter.value;
-                        break;
-                    case Operator.NOT:
-                        query.where[key] = Not(filter.value);
-                        break;
-                    case Operator.LIKE:
-                        query.where[key] = Like(`%${filter.value}%`);
-                        break;
-                    case Operator.ILIKE:
-                        query.where[key] = ILike(`%${filter.value}%`);
-                        break;
-                    case Operator.BETWEEN:
-                        const value = (filter.value as string).split(',')
-                        if (value.length !== 2) {
-                            throw new Error(`Invalid value for BETWEEN operator: ${filter.value}`);
-                        }
-                        query.where[key] = Between(value[0], value[1]);
-                        break;
-                    case Operator.IN:
-                        query.where[key] = In((filter.value as string).split(','));
-                        break;
-                    case Operator.ANY:
-                        query.where[key] = Any((filter.value as string).split(','));
-                        break;
-                    case Operator.LESS_THAN:
-                        query.where[key] = LessThan(filter.value);
-                        break;
-                    case Operator.LESS_THAN_OR_EQUAL:
-                        query.where[key] = LessThanOrEqual(filter.value);
-                        break;
-                    case Operator.MORE_THAN:
-                        query.where[key] = MoreThan(filter.value);
-                        break;
-                    case Operator.MORE_THAN_OR_EQUAL:
-                        query.where[key] = MoreThanOrEqual(filter.value);
-                        break;
-                    default:
-                        throw new Error(`Unknown operator: ${filter.operator}`);
+                const keys = splitQueryKey(filter.key as string)
+                const firstKey = keys[0]
+                const meta = columnMeta(firstKey, entityMeta)
+                if (meta.isRelation) {
+                    query.where[firstKey] = {
+                        [keys[1]]: operatorValue<T>(filter)
+                    }
+                } else if (meta.isJsonb) {
+                    query.where[firstKey] = {
+                        [keys[1]]: operatorValue<T>(filter)
+                    }
+                } else {
+                    query.where[firstKey] = operatorValue<T>(filter)
                 }
             }
         }
@@ -163,5 +143,54 @@ export class ApiQueryOptions<T> {
             query.skip = this.params.offset;
         }
         return query;
+    }
+
+    toTypeormQueryBuilder(repo: Repository<T>) {
+        const table = repo.metadata.tableName
+        let query = repo.createQueryBuilder(table)
+        if (this.params.where.length > 0) {
+            for (const filter of this.params.where) {
+                const keys = splitQueryKey(filter.key as string)
+                const firstKey = keys[0]
+                const meta = columnMeta(firstKey, repo.metadata)
+                // TODO: Support multiple queries
+                if (meta.isRelation) {
+                    query.where(`${firstKey}.${keys[1]} = :${keys[1]}`, { [keys[1]]: filter.value })
+                } else if (meta.isJsonb) {
+                    query.where(`${table}.${firstKey}->>'${keys[1]}' = :${keys[1]}`, { [keys[1]]: filter.value })
+                } else {
+                    switch(filter.operator) {
+                        case Operator.EQUAL:
+                            query.where(`${table}.${firstKey} = :${firstKey}`, { [firstKey]: filter.value })
+                            break
+                        case Operator.NOT:
+                            query.where(`${table}.${firstKey} != :${firstKey}`, { [firstKey]: filter.value })
+                            break
+                        // TODO: Like, ILike, etc
+                        case Operator.IN:
+                            const value = (filter.value as string).split(',')
+                            query.where(`${table}.${firstKey} IN (:...${`${firstKey}Ids`})`, { [`${firstKey}Ids`]: value })
+                            break
+                        default:
+                            throw new Error(`Operator ${filter.operator} not supported`)
+                    }
+                }
+
+                // query.where(`${table}.${firstKey} = :${firstKey}`, { [firstKey]: filter.value })
+            }
+        }
+        if (this.params.relations.length > 0) {
+            for (const relation of this.params.relations) {
+                const name = relation.name as string
+                query.leftJoinAndSelect(`${table}.${name}`, name)
+            }
+        }
+        if (this.params.limit) {
+            query.take(this.params.limit);
+        }
+        if (this.params.offset) {
+            query.skip(this.params.offset);
+        }
+        return query
     }
 }
