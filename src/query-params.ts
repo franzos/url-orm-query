@@ -13,9 +13,15 @@ export interface Relation<T> {
     join?: Join;
 }
 
+export interface OrderBy<T> {
+    key: T[keyof T];
+    direction: 'ASC' | 'DESC';
+}
+
 export class QueryParams<T> {
     where?: Where<T>[];
     relations?: Relation<T>[];
     limit?: number;
     offset?: number;
+    orderBy?: OrderBy<T>[];
 }

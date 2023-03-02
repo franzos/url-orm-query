@@ -29,6 +29,29 @@ describe('Query', () => {
         expect(user.firstName).toBe(usersSeed[0].firstName)
     })
 
+    it('filter by username and join relation (url)', async () => {
+        const url = '?filters=firstName~EQUAL~Amias&limit=10&relations=organization~JOIN'
+        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
+        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQuery(entityMeta)
+        const userRepository = db.getRepository(User)
+        const user = await userRepository.findOne(query)
+
+        expect(user.firstName).toBe(usersSeed[0].firstName)
+        expect(user.organization.id).toBeDefined()
+    })
+
+    it('order by (url)', async () => {
+        const url = '?orderBy=age~ASC'
+        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
+        const query = new ApiQueryOptions<User>().fromUrl(url)
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        expect(users.length).toBe(3)
+        expect(users[0].age).toBe(21)
+        expect(users[1].age).toBe(28)
+        expect(users[2].age).toBe(48)
+    })
+
     it('filter by username', async () => {
         const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
@@ -283,6 +306,24 @@ describe('Query', () => {
     //     expect(orgs[0].address.city).toBe('Tokyo')
     // })
 
+    it('order by', async () => {
+        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
+        const query = new ApiQueryOptions<User>({
+            orderBy: [
+                {
+                    key: 'age',
+                    direction: 'ASC'
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        expect(users.length).toBe(3)
+        expect(users[0].age).toBe(21)
+        expect(users[1].age).toBe(28)
+        expect(users[2].age).toBe(48)
+    })
+
     /**
      * Typeorm Query Builder
      */
@@ -447,5 +488,21 @@ describe('Query', () => {
         console.log(orgs)
         expect(orgs.length).toBe(1)
         expect(orgs[0].address.city).toBe('Tokyo')
+    })
+
+    it('builder: order by', async () => {
+        const query = new ApiQueryOptions<User>({
+            orderBy: [
+                {
+                    key: 'age',
+                    direction: 'ASC'
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(3)
+        expect(users[0].age).toBe(21)
+        expect(users[1].age).toBe(28)
+        expect(users[2].age).toBe(48)
     })
 })

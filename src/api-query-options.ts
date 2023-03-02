@@ -1,7 +1,7 @@
-import { Any, Between, EntityMetadata, FindManyOptions, ILike, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, Repository } from "typeorm";
+import { EntityMetadata, FindManyOptions, Repository } from "typeorm";
 import { Operator, Join } from "./enums";
 import { Where, Relation, QueryParams } from "./query-params";
-import { columnMeta, isRelation, operatorValue, splitQueryKey } from "./typeorm-operators";
+import { columnMeta, operatorValue, splitQueryKey } from "./typeorm-operators";
 
 export class ApiQueryOptions<T> {
     public params: QueryParams<T>
@@ -15,6 +15,7 @@ export class ApiQueryOptions<T> {
                 relations: [],
                 limit: 10,
                 offset: 0,
+                orderBy: []
             }
         }
     }
@@ -25,6 +26,7 @@ export class ApiQueryOptions<T> {
             relations: params.relations || [],
             limit: params.limit || 10,
             offset: params.offset || 0,
+            orderBy: params.orderBy || []
         };
     }
 
@@ -51,6 +53,9 @@ export class ApiQueryOptions<T> {
         }
         if (this.params.relations.length > 0) {
             params.push(`relations=${this.params.relations.map(relation => `${relation.name}~${relation.join}`).join(',')}`);
+        }
+        if (this.params.orderBy.length > 0) {
+            params.push(`orderBy=${this.params.orderBy.map(orderBy => `${orderBy.key}~${orderBy.direction}`).join(',')}`);
         }
         if (this.params.limit) {
             params.push(`limit=${this.params.limit}`);
@@ -83,6 +88,15 @@ export class ApiQueryOptions<T> {
                             name,
                             join: join as Join
                             // TODO: add type
+                        } as any
+                    })
+                    break
+                case 'orderBy':
+                    this.params.orderBy = value.split(',').map(orderBy => {
+                        const [key, direction] = orderBy.split('~')
+                        return {
+                            key,
+                            direction
                         } as any
                     })
                     break
@@ -127,6 +141,7 @@ export class ApiQueryOptions<T> {
                 }
             }
         }
+        console.log(this.params.relations)
         if (this.params.relations.length > 0) {
             for (const relation of this.params.relations) {
                 if (!query.relations) {
@@ -134,6 +149,12 @@ export class ApiQueryOptions<T> {
                 }
                 const name = relation.name as string
                 query.relations[name] = true
+            }
+        }
+        if (this.params.orderBy) {
+            query.order = {};
+            for (const orderBy of this.params.orderBy) {
+                query.order[orderBy.key as string] = orderBy.direction;
             }
         }
         if (this.params.limit) {
@@ -175,14 +196,17 @@ export class ApiQueryOptions<T> {
                             throw new Error(`Operator ${filter.operator} not supported`)
                     }
                 }
-
-                // query.where(`${table}.${firstKey} = :${firstKey}`, { [firstKey]: filter.value })
             }
         }
         if (this.params.relations.length > 0) {
             for (const relation of this.params.relations) {
                 const name = relation.name as string
                 query.leftJoinAndSelect(`${table}.${name}`, name)
+            }
+        }
+        if (this.params.orderBy.length > 0) {
+            for (const orderBy of this.params.orderBy) {
+                query.addOrderBy(`${table}.${orderBy.key as string}`, orderBy.direction)
             }
         }
         if (this.params.limit) {

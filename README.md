@@ -74,7 +74,11 @@ const user = await query.getOne()
 All filter options:
 
 ```
-?filters=firstName~EQUAL~Some?relations=organization&limit=10&offset=0
+?filters=firstName~EQUAL~Some
+&relations=organization~JOIN
+&orderBy=age~ASC
+&limit=10
+&offset=0
 ```
 
 # Tests
