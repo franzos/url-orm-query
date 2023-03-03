@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm'
+import { DataSource, EntityMetadata } from 'typeorm'
 import TestDataSource from "./utils/ormconfig"
 import { seed } from "./utils/seed"
 import { Organization, User } from './entities'
@@ -6,6 +6,10 @@ import { ApiQueryOptions, Operator } from '../src'
 import { usersSeed } from './utils/seed-data'
 
 let db: DataSource
+
+function userEntityMeta(db: DataSource): EntityMetadata {
+    return db.entityMetadatas.find(c => c.name === User.name) as EntityMetadata
+}
 
 beforeAll(async () => {
     db = TestDataSource
@@ -20,21 +24,19 @@ describe('Typeorm find options', () => {
 
     it('filter by username (url)', async () => {
         const url = '?filters=firstName~EQUAL~Amias&limit=10'
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
-        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQuery(entityMeta)
+        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQuery(userEntityMeta(db))
         
         const userRepository = db.getRepository(User)
-        const user = await userRepository.findOne(query)
+        const user = await userRepository.findOne(query) as User
 
         expect(user.firstName).toBe(usersSeed[0].firstName)
     })
 
     it('filter by username and join relation (url)', async () => {
         const url = '?filters=firstName~EQUAL~Amias&limit=10&relations=organization~JOIN'
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
-        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQuery(entityMeta)
+        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQuery(userEntityMeta(db))
         const userRepository = db.getRepository(User)
-        const user = await userRepository.findOne(query)
+        const user = await userRepository.findOne(query) as User
 
         expect(user.firstName).toBe(usersSeed[0].firstName)
         expect(user.organization.id).toBeDefined()
@@ -42,10 +44,9 @@ describe('Typeorm find options', () => {
 
     it('order by (url)', async () => {
         const url = '?orderBy=age~ASC'
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>().fromUrl(url)
         const userRepository = db.getRepository(User)
-        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         expect(users.length).toBe(3)
         expect(users[0].age).toBe(21)
         expect(users[1].age).toBe(28)
@@ -62,16 +63,15 @@ describe('Typeorm find options', () => {
                     value: 'Amias'
                 }
             ]
-        }).toTypeOrmQuery(entityMeta)
+        }).toTypeOrmQuery(userEntityMeta(db))
         
         const userRepository = db.getRepository(User)
-        const user = await userRepository.findOne(query)
+        const user = await userRepository.findOne(query) as User
 
         expect(user.firstName).toBe(usersSeed[0].firstName)
     })
 
     it('filter by username and join relation', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -87,13 +87,12 @@ describe('Typeorm find options', () => {
             ]
         })
         const userRepository = db.getRepository(User)
-        const user = await userRepository.findOne(query.toTypeOrmQuery(entityMeta))
+        const user = await userRepository.findOne(query.toTypeOrmQuery(userEntityMeta(db))) as User
         expect(user.firstName).toBe(usersSeed[0].firstName)
         expect(user.organization).toBeDefined()
     })
 
     it('filter by username NOT', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -104,14 +103,13 @@ describe('Typeorm find options', () => {
             ],
         })
         const userRepository = db.getRepository(User)
-        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         for (const user of users) {
             expect(user.firstName).not.toBe('Amias')
         }
     })
 
     it('filter by username LIKE', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -122,14 +120,13 @@ describe('Typeorm find options', () => {
             ],
         })
         const userRepository = db.getRepository(User)
-        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         for (const user of users) {
             expect(user.firstName).toBe('Amias')
         }
     })
 
     it('filter by age BETWEEN', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -140,7 +137,7 @@ describe('Typeorm find options', () => {
             ],
         })
         const userRepository = db.getRepository(User)
-        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         for (const user of users) {
             expect(user.age).toBeGreaterThanOrEqual(20)
             expect(user.age).toBeLessThanOrEqual(22)
@@ -148,7 +145,6 @@ describe('Typeorm find options', () => {
     })
 
     it('filter by age IN', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -159,12 +155,11 @@ describe('Typeorm find options', () => {
             ],
         })
         const userRepository = db.getRepository(User)
-        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         expect(users.length).toBe(1)
     })
 
     it('filter by firstName IN', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -175,12 +170,11 @@ describe('Typeorm find options', () => {
             ],
         })
         const userRepository = db.getRepository(User)
-        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         expect(users.length).toBe(2)
     })
 
     it('filter by age LESS_THAN', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -191,13 +185,12 @@ describe('Typeorm find options', () => {
             ],
         })
         const userRepository = db.getRepository(User)
-        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         expect(users.length).toBe(1)
         expect(users[0].firstName).toBe('Amias')
     })
 
     it('filter by age LESS_THAN_OR_EQUAL', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -208,7 +201,7 @@ describe('Typeorm find options', () => {
             ],
         })
         const userRepository = db.getRepository(User)
-        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         expect(users.length).toBe(1)
         expect(users[0].firstName).toBe('Amias')
     })
@@ -225,12 +218,11 @@ describe('Typeorm find options', () => {
             ],
         })
         const userRepository = db.getRepository(User)
-        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         expect(users.length).toBe(0)
     })
 
     it('list users, limit to 1', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             limit: 1,
             relations: [
@@ -240,13 +232,12 @@ describe('Typeorm find options', () => {
             ]
         })
         const userRepository = db.getRepository(User)
-        const user = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const user = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         expect(user.length).toBe(1)
         expect(user[0].organization).toBeDefined()
     })
 
     it('list users by organization name', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -262,13 +253,12 @@ describe('Typeorm find options', () => {
             ]
         })
         const userRepository = db.getRepository(User)
-        const user = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const user = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         expect(user.length).toBe(3)
         expect(user[0].organization).toBeDefined()
     })
 
     it('list users by organization name - no result', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -284,12 +274,11 @@ describe('Typeorm find options', () => {
             ]
         })
         const userRepository = db.getRepository(User)
-        const user = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const user = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         expect(user.length).toBe(0)
     })
 
     it('order by', async () => {
-        const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
             orderBy: [
                 {
@@ -299,7 +288,7 @@ describe('Typeorm find options', () => {
             ],
         })
         const userRepository = db.getRepository(User)
-        const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
         expect(users.length).toBe(3)
         expect(users[0].age).toBe(21)
         expect(users[1].age).toBe(28)
@@ -316,8 +305,8 @@ describe('Typeorm query builder', () => {
     it('filter by username (url)', async () => {
         const url = '?filters=firstName~EQUAL~Amias&limit=10'
         const query = new ApiQueryOptions<User>().fromUrl(url).toTypeormQueryBuilder(db.getRepository(User))
-        const user = await query.getOne()
-
+        const user = await query.getOne() as User
+        
         expect(user.firstName).toBe(usersSeed[0].firstName)
     })
 
@@ -331,7 +320,7 @@ describe('Typeorm query builder', () => {
                 }
             ]
         }).toTypeormQueryBuilder(db.getRepository(User))
-        const user = await query.getOne()
+        const user = await query.getOne() as User
 
         expect(user.firstName).toBe(usersSeed[0].firstName)
     })
@@ -351,7 +340,7 @@ describe('Typeorm query builder', () => {
                 }
             ]
         }).toTypeormQueryBuilder(db.getRepository(User))
-        const user = await query.getOne()
+        const user = await query.getOne() as User
         expect(user.firstName).toBe(usersSeed[0].firstName)
         expect(user.organization).toBeDefined()
     })
