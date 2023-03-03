@@ -108,6 +108,13 @@ age~EQUAL~48
 &relations=organization~JOIN
 ```
 
+Simple filters (EQUAL) and relations (LEFT_SELECT)
+
+```bash
+?filters=firstName~Some
+&relations=organization
+```
+
 # Tests
 
 Run tests:

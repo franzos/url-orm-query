@@ -42,6 +42,16 @@ describe('Typeorm find options', () => {
         expect(user.organization.id).toBeDefined()
     })
 
+    it('filter by username and join relation (url simple)', async () => {
+        const url = '?filters=firstName~Amias&limit=10&relations=organization'
+        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQuery(userEntityMeta(db))
+        const userRepository = db.getRepository(User)
+        const user = await userRepository.findOne(query) as User
+
+        expect(user.firstName).toBe(usersSeed[0].firstName)
+        expect(user.organization.id).toBeDefined()
+    })
+
     it('order by (url)', async () => {
         const url = '?orderBy=age~ASC'
         const query = new ApiQueryOptions<User>().fromUrl(url)
