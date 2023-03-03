@@ -5,15 +5,15 @@ import { Organization, User } from './entities'
 import { ApiQueryOptions, Operator } from '../src'
 import { usersSeed } from './utils/seed-data'
 
-describe('Query', () => {
-    let db: DataSource
+let db: DataSource
 
-    beforeAll(async () => {
-        db = TestDataSource
-        await db.initialize()
-        await seed(db)
-    })
+beforeAll(async () => {
+    db = TestDataSource
+    await db.initialize()
+    await seed(db)
+})
 
+describe('Typeorm find options', () => {
     /**
      * Typeorm find
      */
@@ -288,25 +288,6 @@ describe('Query', () => {
         expect(user.length).toBe(0)
     })
 
-    // TODO: Not supported by typeorm https://github.com/typeorm/typeorm/issues/2256
-    // it('filter by jsonb', async () => {
-    //     const entityMeta = db.entityMetadatas.find(c => c.name === Organization.name)
-    //     const query = new ApiQueryOptions<Organization>({
-    //         where: [
-    //             {
-    //                 key: 'address.city',
-    //                 operator: Operator.EQUAL,
-    //                 value: 'Tokyo'
-    //             }
-    //         ],
-    //     })
-    //     const orgRepository = db.getRepository(Organization)
-    //     const orgs = await orgRepository.find(query.toTypeOrmQuery(entityMeta))
-    //     console.log(orgs)
-    //     expect(orgs.length).toBe(1)
-    //     expect(orgs[0].address.city).toBe('Tokyo')
-    // })
-
     it('order by', async () => {
         const entityMeta = db.entityMetadatas.find(c => c.name === User.name)
         const query = new ApiQueryOptions<User>({
@@ -324,12 +305,15 @@ describe('Query', () => {
         expect(users[1].age).toBe(28)
         expect(users[2].age).toBe(48)
     })
+})
+
+describe('Typeorm query builder', () => {
 
     /**
      * Typeorm Query Builder
      */
 
-    it('builder: filter by username (url)', async () => {
+    it('filter by username (url)', async () => {
         const url = '?filters=firstName~EQUAL~Amias&limit=10'
         const query = new ApiQueryOptions<User>().fromUrl(url).toTypeormQueryBuilder(db.getRepository(User))
         const user = await query.getOne()
@@ -337,7 +321,7 @@ describe('Query', () => {
         expect(user.firstName).toBe(usersSeed[0].firstName)
     })
 
-    it('builder: filter by username', async () => {
+    it('filter by username', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -352,7 +336,7 @@ describe('Query', () => {
         expect(user.firstName).toBe(usersSeed[0].firstName)
     })
 
-    it('builder: filter by username and join relation', async () => {
+    it('filter by username and join relation', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -372,7 +356,7 @@ describe('Query', () => {
         expect(user.organization).toBeDefined()
     })
 
-    it('builder: filter by username NOT', async () => {
+    it('filter by username NOT', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -390,7 +374,7 @@ describe('Query', () => {
 
     // TODO: Like, Between
 
-    it('builder: filter by firstName LIKE', async () => {
+    it('filter by firstName LIKE', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -404,7 +388,7 @@ describe('Query', () => {
         expect(users.length).toBe(1)
     })
 
-    it('builder: filter by firstName BETWEEN', async () => {
+    it('filter by firstName BETWEEN', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -421,7 +405,7 @@ describe('Query', () => {
         }
     })
 
-    it('builder: filter by firstName IN', async () => {
+    it('filter by firstName IN', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -435,7 +419,7 @@ describe('Query', () => {
         expect(users.length).toBe(1)
     })
 
-    it('builder: filter by multiple firstName IN', async () => {
+    it('filter by multiple firstName IN', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -449,7 +433,7 @@ describe('Query', () => {
         expect(users.length).toBe(2)
     })
 
-    it('builder: filter by mulitple firstName NOT_IN', async () => {
+    it('filter by mulitple firstName NOT_IN', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -463,7 +447,7 @@ describe('Query', () => {
         expect(users.length).toBe(1)
     })
 
-    it('builder: filter by age LESS_THAN', async () => {
+    it('filter by age LESS_THAN', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -478,7 +462,7 @@ describe('Query', () => {
         expect(users[0].firstName).toBe('Amias')
     })
 
-    it('builder: filter by age LESS_THAN_OR_EQUAL', async () => {
+    it('filter by age LESS_THAN_OR_EQUAL', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -494,7 +478,7 @@ describe('Query', () => {
     })
 
 
-    it('builder: filter by age LESS_THAN_OR_EQUAL', async () => {
+    it('filter by age LESS_THAN_OR_EQUAL', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -509,7 +493,7 @@ describe('Query', () => {
     })
 
 
-    it('builder: filter by age MORE_THAN', async () => {
+    it('filter by age MORE_THAN', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -524,7 +508,7 @@ describe('Query', () => {
     })
     // TODO: Less than, Less than or equal
 
-    it('builder: list users, limit to 1', async () => {
+    it('list users, limit to 1', async () => {
         const query = new ApiQueryOptions<User>({
             limit: 1,
             relations: [
@@ -538,7 +522,7 @@ describe('Query', () => {
         expect(user[0].organization).toBeDefined()
     })
 
-    it('builder: list users by organization name', async () => {
+    it('list users by organization name', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -558,7 +542,7 @@ describe('Query', () => {
         expect(user[0].organization).toBeDefined()
     })
 
-    it('builder: list users by organization name - no result', async () => {
+    it('list users by organization name - no result', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -577,7 +561,7 @@ describe('Query', () => {
         expect(user.length).toBe(0)
     })
 
-    it('builder: filter by jsonb', async () => {
+    it('filter by jsonb', async () => {
         const query = new ApiQueryOptions<Organization>({
             where: [
                 {
@@ -588,12 +572,11 @@ describe('Query', () => {
             ],
         }).toTypeormQueryBuilder(db.getRepository(Organization))
         const orgs = await query.getMany()
-        console.log(orgs)
         expect(orgs.length).toBe(1)
         expect(orgs[0].address.city).toBe('Tokyo')
     })
 
-    it('builder: order by', async () => {
+    it('order by', async () => {
         const query = new ApiQueryOptions<User>({
             orderBy: [
                 {
@@ -607,5 +590,53 @@ describe('Query', () => {
         expect(users[0].age).toBe(21)
         expect(users[1].age).toBe(28)
         expect(users[2].age).toBe(48)
+    })
+
+    it('multiple filter', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'lastName',
+                    operator: Operator.EQUAL,
+                    value: 'Fito'
+                },
+                {
+                    key: 'age',
+                    operator: Operator.EQUAL,
+                    value: '48'
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users[0].firstName).toBe('Perce')
+    })
+
+    it('multiple filter (with relation)', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'organization.name',
+                    operator: Operator.EQUAL,
+                    value: 'Truper Corp.'
+                },
+                {
+                    key: 'age',
+                    operator: Operator.EQUAL,
+                    value: '48'
+                }
+            ],
+            relations: [{
+                name: 'organization'
+            }]
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users[0].firstName).toBe('Perce')
+    })
+
+    it('multiple filter (with relation, url)', async () => {
+        const url = '?filters=organization.name~EQUAL~Truper Corp.,age~EQUAL~48&relations=organization~JOIN'
+        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users[0].firstName).toBe('Perce')
     })
 })

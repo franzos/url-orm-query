@@ -169,58 +169,62 @@ export class ApiQueryOptions<T> {
         const table = repo.metadata.tableName
         let query = repo.createQueryBuilder(table)
         if (this.params.where.length > 0) {
-            for (const filter of this.params.where) {
+            for (let i = 0; i < this.params.where.length; i++) {
+                const filter = this.params.where[i]
                 const keys = splitQueryKey(filter.key as string)
                 const firstKey = keys[0]
-                const meta = columnMeta(firstKey, repo.metadata)
+                const columNeta = columnMeta(firstKey, repo.metadata)
+                
+                const queryFunction = i === 0 ? 'where' : 'andWhere'
+
                 // TODO: Support multiple queries
-                if (meta.isRelation) {
-                    query.where(`${firstKey}.${keys[1]} = :${keys[1]}`, { [keys[1]]: filter.value })
-                } else if (meta.isJsonb) {
-                    query.where(`${table}.${firstKey}->>'${keys[1]}' = :${keys[1]}`, { [keys[1]]: filter.value })
+                if (columNeta.isRelation) {
+                    query[queryFunction](`${firstKey}.${keys[1]} = :${keys[1]}`, { [keys[1]]: filter.value })
+                } else if (columNeta.isJsonb) {
+                    query[queryFunction](`${table}.${firstKey}->>'${keys[1]}' = :${keys[1]}`, { [keys[1]]: filter.value })
                 } else {
                     switch(filter.operator) {
                         case Operator.EQUAL:
-                            query.where(`${table}.${firstKey} = :${firstKey}`, { [firstKey]: filter.value })
+                            query[queryFunction](`${table}.${firstKey} = :${firstKey}`, { [firstKey]: filter.value })
                             break
                         case Operator.NOT:
-                            query.where(`${table}.${firstKey} != :${firstKey}`, { [firstKey]: filter.value })
+                            query[queryFunction](`${table}.${firstKey} != :${firstKey}`, { [firstKey]: filter.value })
                             break
                         case Operator.LIKE:
-                            query.where(`${table}.${firstKey} LIKE :${firstKey}`, { [firstKey]: `%${filter.value}%` })
+                            query[queryFunction](`${table}.${firstKey} LIKE :${firstKey}`, { [firstKey]: `%${filter.value}%` })
                             break
                         case Operator.ILIKE:
-                            query.where(`LOWER(${table}.${firstKey}) LIKE :${firstKey}`, { [firstKey]: `%${filter.value}%` })
+                            query[queryFunction](`LOWER(${table}.${firstKey}) LIKE :${firstKey}`, { [firstKey]: `%${filter.value}%` })
                             break
                         case Operator.BETWEEN:
                             const betweenValue = (filter.value as string).split(',')
                             if (betweenValue.length !== 2) {
                                 throw new Error(`Invalid value for BETWEEN operator. Expected 2 values, got ${filter.value}`)
                             }
-                            query.where(`${table}.${firstKey} BETWEEN :FROM${firstKey} AND :TO${firstKey}`, { 
+                            query[queryFunction](`${table}.${firstKey} BETWEEN :FROM${firstKey} AND :TO${firstKey}`, { 
                                 [`FROM${firstKey}`]: betweenValue[0], [`TO${firstKey}`]: betweenValue[1] 
                             })
                             break
                         // TODO: Like, ILike, etc
                         case Operator.IN:
                             const inValue = (filter.value as string).split(',')
-                            query.where(`${table}.${firstKey} IN (:...${`${firstKey}Ids`})`, { [`${firstKey}Ids`]: inValue })
+                            query[queryFunction](`${table}.${firstKey} IN (:...${`${firstKey}Ids`})`, { [`${firstKey}Ids`]: inValue })
                             break
                         case Operator.NOT_IN:
                             const notInValue = (filter.value as string).split(',')
-                            query.where(`${table}.${firstKey} NOT IN (:...${`${firstKey}Ids`})`, { [`${firstKey}Ids`]: notInValue })
+                            query[queryFunction](`${table}.${firstKey} NOT IN (:...${`${firstKey}Ids`})`, { [`${firstKey}Ids`]: notInValue })
                             break
                         case Operator.LESS_THAN:
-                            query.where(`${table}.${firstKey} < :${firstKey}`, { [firstKey]: filter.value })
+                            query[queryFunction](`${table}.${firstKey} < :${firstKey}`, { [firstKey]: filter.value })
                             break
                         case Operator.LESS_THAN_OR_EQUAL:
-                            query.where(`${table}.${firstKey} <= :${firstKey}`, { [firstKey]: filter.value })
+                            query[queryFunction](`${table}.${firstKey} <= :${firstKey}`, { [firstKey]: filter.value })
                             break
                         case Operator.MORE_THAN:
-                            query.where(`${table}.${firstKey} > :${firstKey}`, { [firstKey]: filter.value })
+                            query[queryFunction](`${table}.${firstKey} > :${firstKey}`, { [firstKey]: filter.value })
                             break
                         case Operator.MORE_THAN_OR_EQUAL:
-                            query.where(`${table}.${firstKey} >= :${firstKey}`, { [firstKey]: filter.value })
+                            query[queryFunction](`${table}.${firstKey} >= :${firstKey}`, { [firstKey]: filter.value })
                             break
                         default:
                             throw new Error(`Operator ${filter.operator} not supported`)

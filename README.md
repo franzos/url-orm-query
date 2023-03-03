@@ -75,12 +75,20 @@ const user = await query.getOne()
 
 All filter options:
 
-```
+```bash
 ?filters=firstName~EQUAL~Some
 &relations=organization~JOIN
 &orderBy=age~ASC
 &limit=10
 &offset=0
+```
+
+Multiple filter:
+
+```bash
+?filters=organization.name~EQUAL~Truper Corp.,
+age~EQUAL~48
+&relations=organization~JOIN
 ```
 
 # Tests
