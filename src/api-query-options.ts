@@ -216,7 +216,8 @@ export class ApiQueryOptions<T> {
                         query.innerJoin(`${table}.${name}`, name)
                         break
                     default:
-                        throw new Error(`Join type ${relation.join} not supported`)
+                        query.leftJoinAndSelect(`${table}.${name}`, name)
+                        break
                 }
 
             }
