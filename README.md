@@ -124,6 +124,37 @@ Simple filters (EQUAL) and relations (LEFT_SELECT)
 &relations=organization
 ```
 
+## Pagination
+
+1. Create pagination object
+2. Set total number of results
+3. Use url() to get url for first page
+4. Use changePage() to get url for next page
+
+```typescript
+const query = new ApiQueryOptions<User>({
+    where: [
+        {
+            key: 'organization.name',
+            operator: Operator.EQUAL,
+            value: 'Truper Corp.'
+        },
+    ],
+    limit: 10,
+})
+const pagination = new ApiPagination(query)
+pagination.setTotal(100)
+
+const url = pagination.url()
+// '?filters=organization.name~EQUAL~Truper Corp.&limit=10'
+
+const urlAfter = pagination.changePage(2)
+// '?filters=organization.name~EQUAL~Truper Corp.&limit=10&offset=10'
+
+const page3 = pagination.changePage(3)
+// '?filters=organization.name~EQUAL~Truper Corp.&limit=10&offset=20'
+```
+
 # Tests
 
 Run tests:

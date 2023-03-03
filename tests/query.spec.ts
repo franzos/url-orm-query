@@ -2,7 +2,7 @@ import { DataSource, EntityMetadata } from 'typeorm'
 import TestDataSource from "./utils/ormconfig"
 import { seed } from "./utils/seed"
 import { Organization, User } from './entities'
-import { ApiQueryOptions, Operator } from '../src'
+import { ApiPagination, ApiQueryOptions, Operator } from '../src'
 import { usersSeed } from './utils/seed-data'
 
 let db: DataSource
@@ -638,4 +638,55 @@ describe('Typeorm query builder', () => {
         const users = await query.getMany()
         expect(users[0].firstName).toBe('Perce')
     })
+})
+
+describe('Pagination', () => {
+    it('basics', async () => {
+        const query = new ApiQueryOptions<User>({
+            limit: 10,
+        })
+        const pagination = new ApiPagination(query)
+        pagination.setTotal(100)
+        expect(pagination.perPage).toBe(10)
+        expect(pagination.currentPage).toBe(1)
+        expect(pagination.totalPages).toBe(10)
+        expect(pagination.total).toBe(100)
+        const url = pagination.url()
+        expect(url).toBe('?limit=10')
+
+        const urlAfter = pagination.changePage(2)
+        expect(urlAfter).toBe('?limit=10&offset=10')
+
+        const urlAfter2 = pagination.changePage(1)
+        expect(urlAfter2).toBe('?limit=10')
+    })
+
+    it('basics with other params', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'organization.name',
+                    operator: Operator.EQUAL,
+                    value: 'Truper Corp.'
+                },
+            ],
+            limit: 10,
+        })
+        const pagination = new ApiPagination(query)
+        pagination.setTotal(100)
+        expect(pagination.perPage).toBe(10)
+        expect(pagination.currentPage).toBe(1)
+        expect(pagination.totalPages).toBe(10)
+        expect(pagination.total).toBe(100)
+
+        const url = pagination.url()
+        expect(url).toBe('?filters=organization.name~EQUAL~Truper Corp.&limit=10')
+
+        const urlAfter = pagination.changePage(2)
+        expect(urlAfter).toBe('?filters=organization.name~EQUAL~Truper Corp.&limit=10&offset=10')
+
+        const urlAfter2 = pagination.changePage(3)
+        expect(urlAfter2).toBe('?filters=organization.name~EQUAL~Truper Corp.&limit=10&offset=20')
+    })
+
 })
