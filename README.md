@@ -22,6 +22,8 @@ npm install url-orm-query
 
 ## Supported Operators
 
+### Filters
+
 Depends on whether you use find options (fo) or query builder (qb).
 
 - EQUAL (fo, qb)
@@ -36,6 +38,13 @@ Depends on whether you use find options (fo) or query builder (qb).
 - LESS_THAN_OR_EQUAL (fo, qb)
 - MORE_THAN (fo, qb)
 - MORE_THAN_OR_EQUAL (fo, qb)
+
+### Relations
+
+- INNER (qb)
+- LEFT (qb)
+- LEFT_SELECT (qb)
+- INNER_SELECT (qb)
 
 ## TODO
 
