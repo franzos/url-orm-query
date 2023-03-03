@@ -210,6 +210,18 @@ export class ApiQueryOptions<T> {
                             const notInValue = (filter.value as string).split(',')
                             query.where(`${table}.${firstKey} NOT IN (:...${`${firstKey}Ids`})`, { [`${firstKey}Ids`]: notInValue })
                             break
+                        case Operator.LESS_THAN:
+                            query.where(`${table}.${firstKey} < :${firstKey}`, { [firstKey]: filter.value })
+                            break
+                        case Operator.LESS_THAN_OR_EQUAL:
+                            query.where(`${table}.${firstKey} <= :${firstKey}`, { [firstKey]: filter.value })
+                            break
+                        case Operator.MORE_THAN:
+                            query.where(`${table}.${firstKey} > :${firstKey}`, { [firstKey]: filter.value })
+                            break
+                        case Operator.MORE_THAN_OR_EQUAL:
+                            query.where(`${table}.${firstKey} >= :${firstKey}`, { [firstKey]: filter.value })
+                            break
                         default:
                             throw new Error(`Operator ${filter.operator} not supported`)
                     }

@@ -14,10 +14,10 @@ Depends on whether you use find options (fo) or query builder (qb).
 - IN (fo, qb)
 - NOT_IN (qb)
 - ANY (fo)
-- LESS_THAN (fo)
-- LESS_THAN_OR_EQUAL (fo)
-- MORE_THAN (fo)
-- MORE_THAN_OR_EQUAL (fo)
+- LESS_THAN (fo, qb)
+- LESS_THAN_OR_EQUAL (fo, qb)
+- MORE_THAN (fo, qb)
+- MORE_THAN_OR_EQUAL (fo, qb)
 
 ## TODO
 

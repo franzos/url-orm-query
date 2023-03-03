@@ -435,21 +435,7 @@ describe('Query', () => {
         expect(users.length).toBe(1)
     })
 
-    it('builder: filter by firstName NOT_IN', async () => {
-        const query = new ApiQueryOptions<User>({
-            where: [
-                {
-                    key: 'firstName',
-                    operator: Operator.NOT_IN,
-                    value: 'Amias,Perce'
-                }
-            ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
-        const users = await query.getMany()
-        expect(users.length).toBe(1)
-    })
-
-    it('builder: filter by firstName IN', async () => {
+    it('builder: filter by multiple firstName IN', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -463,6 +449,79 @@ describe('Query', () => {
         expect(users.length).toBe(2)
     })
 
+    it('builder: filter by mulitple firstName NOT_IN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'firstName',
+                    operator: Operator.NOT_IN,
+                    value: 'Amias,Perce'
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(1)
+    })
+
+    it('builder: filter by age LESS_THAN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.LESS_THAN,
+                    value: '22'
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(1)
+        expect(users[0].firstName).toBe('Amias')
+    })
+
+    it('builder: filter by age LESS_THAN_OR_EQUAL', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.LESS_THAN_OR_EQUAL,
+                    value: '21'
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(1)
+        expect(users[0].firstName).toBe('Amias')
+    })
+
+
+    it('builder: filter by age LESS_THAN_OR_EQUAL', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.LESS_THAN_OR_EQUAL,
+                    value: '20'
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(0)
+    })
+
+
+    it('builder: filter by age MORE_THAN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.MORE_THAN,
+                    value: '22'
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(2)
+    })
     // TODO: Less than, Less than or equal
 
     it('builder: list users, limit to 1', async () => {
