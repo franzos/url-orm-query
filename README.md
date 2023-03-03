@@ -4,6 +4,22 @@ This library makes it easy to pass query params from front-end, via URL params, 
 
 It's hardly complete and only useful for basic needs.
 
+## Installation
+
+The package is available here: https://npm.pantherx.org/-/web/detail/url-orm-query. If you setup your npmrc to use this registry, you can install it...
+
+with pnpm:
+
+```bash
+pnpm install url-orm-query
+```
+
+with npm:
+
+```bash
+npm install url-orm-query
+```
+
 ## Supported Operators
 
 Depends on whether you use find options (fo) or query builder (qb).
