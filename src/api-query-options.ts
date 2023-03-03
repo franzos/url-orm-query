@@ -202,7 +202,23 @@ export class ApiQueryOptions<T> {
         if (this.params.relations.length > 0) {
             for (const relation of this.params.relations) {
                 const name = relation.name as string
-                query.leftJoinAndSelect(`${table}.${name}`, name)
+                switch (relation.join) {
+                    case Join.LEFT_SELECT:
+                        query.leftJoinAndSelect(`${table}.${name}`, name)
+                        break
+                    case Join.LEFT:
+                        query.leftJoin(`${table}.${name}`, name)
+                        break
+                    case Join.INNER_SELECT:
+                        query.innerJoinAndSelect(`${table}.${name}`, name)
+                        break
+                    case Join.INNER:
+                        query.innerJoin(`${table}.${name}`, name)
+                        break
+                    default:
+                        throw new Error(`Join type ${relation.join} not supported`)
+                }
+
             }
         }
         if (this.params.orderBy.length > 0) {
