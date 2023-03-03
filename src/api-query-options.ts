@@ -141,7 +141,6 @@ export class ApiQueryOptions<T> {
                 }
             }
         }
-        console.log(this.params.relations)
         if (this.params.relations.length > 0) {
             for (const relation of this.params.relations) {
                 if (!query.relations) {
@@ -187,10 +186,29 @@ export class ApiQueryOptions<T> {
                         case Operator.NOT:
                             query.where(`${table}.${firstKey} != :${firstKey}`, { [firstKey]: filter.value })
                             break
+                        case Operator.LIKE:
+                            query.where(`${table}.${firstKey} LIKE :${firstKey}`, { [firstKey]: `%${filter.value}%` })
+                            break
+                        case Operator.ILIKE:
+                            query.where(`LOWER(${table}.${firstKey}) LIKE :${firstKey}`, { [firstKey]: `%${filter.value}%` })
+                            break
+                        case Operator.BETWEEN:
+                            const betweenValue = (filter.value as string).split(',')
+                            if (betweenValue.length !== 2) {
+                                throw new Error(`Invalid value for BETWEEN operator. Expected 2 values, got ${filter.value}`)
+                            }
+                            query.where(`${table}.${firstKey} BETWEEN :FROM${firstKey} AND :TO${firstKey}`, { 
+                                [`FROM${firstKey}`]: betweenValue[0], [`TO${firstKey}`]: betweenValue[1] 
+                            })
+                            break
                         // TODO: Like, ILike, etc
                         case Operator.IN:
-                            const value = (filter.value as string).split(',')
-                            query.where(`${table}.${firstKey} IN (:...${`${firstKey}Ids`})`, { [`${firstKey}Ids`]: value })
+                            const inValue = (filter.value as string).split(',')
+                            query.where(`${table}.${firstKey} IN (:...${`${firstKey}Ids`})`, { [`${firstKey}Ids`]: inValue })
+                            break
+                        case Operator.NOT_IN:
+                            const notInValue = (filter.value as string).split(',')
+                            query.where(`${table}.${firstKey} NOT IN (:...${`${firstKey}Ids`})`, { [`${firstKey}Ids`]: notInValue })
                             break
                         default:
                             throw new Error(`Operator ${filter.operator} not supported`)

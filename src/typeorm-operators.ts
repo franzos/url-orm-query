@@ -31,7 +31,7 @@ export function operatorValue<T>(filter: Where<T>) {
         case Operator.BETWEEN:
             const value = (filter.value as string).split(',')
             if (value.length !== 2) {
-                throw new Error(`Invalid value for BETWEEN operator: ${filter.value}`);
+                throw new Error(`Invalid value for BETWEEN operator. Expected 2 values, got ${filter.value}`);
             }
             return Between(value[0], value[1]);
         case Operator.IN:

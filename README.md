@@ -4,23 +4,25 @@ This library makes it easy to pass query params from front-end, via URL query pa
 
 ## Supported Operators
 
-Depends on whether you use find options or query builder (qb).
+Depends on whether you use find options (fo) or query builder (qb).
 
-- EQUAL (qb)
-- NOT (qb)
-- LIKE
-- ILIKE
-- BETWEEN
-- IN (qb)
-- ANY
-- LESS_THAN
-- LESS_THAN_OR_EQUAL
-- MORE_THAN
-- MORE_THAN_OR_EQUAL
+- EQUAL (fo, qb)
+- NOT (fo, qb)
+- LIKE (fo, qb)
+- ILIKE (fo, qb)
+- BETWEEN (fo, qb)
+- IN (fo, qb)
+- NOT_IN (qb)
+- ANY (fo)
+- LESS_THAN (fo)
+- LESS_THAN_OR_EQUAL (fo)
+- MORE_THAN (fo)
+- MORE_THAN_OR_EQUAL (fo)
 
 ## TODO
 
 - Support for more operators
+- Support multiple filters
 - Type safety
 - Validation
 

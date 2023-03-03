@@ -142,7 +142,8 @@ describe('Query', () => {
         const userRepository = db.getRepository(User)
         const users = await userRepository.find(query.toTypeOrmQuery(entityMeta))
         for (const user of users) {
-            expect(user.firstName).toBe('Amias')
+            expect(user.age).toBeGreaterThanOrEqual(20)
+            expect(user.age).toBeLessThanOrEqual(22)
         }
     })
 
@@ -389,13 +390,58 @@ describe('Query', () => {
 
     // TODO: Like, Between
 
-    it('builder: filter by age IN', async () => {
+    it('builder: filter by firstName LIKE', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'firstName',
+                    operator: Operator.LIKE,
+                    value: 'Ami'
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(1)
+    })
+
+    it('builder: filter by firstName BETWEEN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.BETWEEN,
+                    value: '20,22'
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        for (const user of users) {
+            expect(user.age).toBeGreaterThanOrEqual(20)
+            expect(user.age).toBeLessThanOrEqual(22)
+        }
+    })
+
+    it('builder: filter by firstName IN', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
                     key: 'firstName',
                     operator: Operator.IN,
                     value: 'Amias'
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(1)
+    })
+
+    it('builder: filter by firstName NOT_IN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'firstName',
+                    operator: Operator.NOT_IN,
+                    value: 'Amias,Perce'
                 }
             ],
         }).toTypeormQueryBuilder(db.getRepository(User))
@@ -418,8 +464,6 @@ describe('Query', () => {
     })
 
     // TODO: Less than, Less than or equal
-
-
 
     it('builder: list users, limit to 1', async () => {
         const query = new ApiQueryOptions<User>({
