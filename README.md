@@ -106,8 +106,17 @@ Cleanup:
 docker-compose down
 ```
 
+# Development
 
-# Migrations
+## Tests
+
+Run tests in watch mode:
+
+```bash
+docker-compose run app pnpm run test:watch
+```
+
+## Migrations
 
 Create a new migration (replace 'initial' with the name of the migration):
 
