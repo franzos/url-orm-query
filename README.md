@@ -1,6 +1,8 @@
 # Api Query Library (URL to ORM)
 
-This library makes it easy to pass query params from front-end, via URL query params, to a TypeORM backend.
+This library makes it easy to pass query params from front-end, via URL params, to a TypeORM backend.
+
+It's hardly complete and only useful for basic needs.
 
 ## Supported Operators
 
@@ -22,7 +24,6 @@ Depends on whether you use find options (fo) or query builder (qb).
 ## TODO
 
 - Support for more operators
-- Support multiple filters
 - Type safety
 - Validation
 
@@ -33,7 +34,7 @@ Typeorm supports two approaches:
 1. Find options: https://typeorm.io/find-options
 2. Query builder: https://typeorm.io/select-query-builder
 
-Option 1 is more convinient but does not support querying JSONB: https://github.com/typeorm/typeorm/issues/2256
+Option 1 is more convinient but does not support querying JSONB: https://github.com/typeorm/typeorm/issues/2256. I generally recommend to use 2 - the Query builder.
 
 Frontent:
 
