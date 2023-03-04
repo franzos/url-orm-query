@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "npm run prebuild && node build.js && tsc",
+    "build": "npm run prebuild && node build.js && tsc --emitDeclarationOnly",
     "test": "jest --config ./tests/jest.config.ts",
     "test:watch": "jest --watchAll --config ./tests/jest.config.ts",
     "typeorm": "./node_modules/.bin/typeorm-ts-node-esm -d tests/utils/ormconfig.ts"
