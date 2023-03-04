@@ -1,4 +1,4 @@
-import { ApiQueryOptions } from "./api-query-options";
+import { ApiQueryOptions } from "./api-query-options.js";
 
 /**
  * Easy pagination based on ApiQueryOptions

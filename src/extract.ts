@@ -1,4 +1,4 @@
-import { Join, Operator } from "./enums"
+import { Join, Operator } from "./enums/index.js"
 
 export function parseFilters<T>(input: string) {
     return input.split(',').map(filter => {

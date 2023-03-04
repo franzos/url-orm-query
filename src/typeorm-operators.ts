@@ -1,7 +1,7 @@
 import { Any, Between, Brackets, EntityMetadata, ILike, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, ObjectLiteral, Repository } from "typeorm";
 import { ColumnMetadata } from "typeorm/metadata/ColumnMetadata";
-import { Operator } from "./enums";
-import { Where } from "./query-params";
+import { Operator } from "./enums/index.js";
+import { Where } from "./query-params.js";
 
 export function isRelation(key: string, entityMeta: EntityMetadata) {
     return entityMeta.ownRelations.find(c => c.propertyName === key) !== undefined

@@ -1,8 +1,8 @@
-import { parseFilters, parseOrderBy, parseRelations } from "./extract";
 import { EntityMetadata, FindManyOptions, Repository } from "typeorm";
-import { Operator, Join } from "./enums";
-import { Where, Relation, QueryParams, QueryParamsRaw } from "./query-params";
-import { columnMeta, operatorValue, queryBuilderAssembly, splitQueryKey } from "./typeorm-operators";
+import { parseFilters, parseOrderBy, parseRelations } from "./extract.js";
+import { Join } from "./enums/index.js";
+import { Where, Relation, QueryParams, QueryParamsRaw } from "./query-params.js";
+import { columnMeta, operatorValue, queryBuilderAssembly, splitQueryKey } from "./typeorm-operators.js";
 
 export class ApiQueryOptions<T> {
     public params: QueryParams<T>

@@ -1,4 +1,4 @@
-import { Join, Operator } from "./enums";
+import { Join, Operator } from "./enums/index.js";
 
 // keyof T: works for actual name detection (firstName, lastName, etc.)
 // T[keyof T]: works for type detection (string, number, etc.)
