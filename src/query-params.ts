@@ -25,3 +25,15 @@ export class QueryParams<T> {
     offset?: number;
     orderBy?: OrderBy<T>[];
 }
+
+/**
+ * Raw query params
+ * For ex. for NestJS route handler parameter decorator
+ */
+export interface QueryParamsRaw {
+    filters?: string;
+    relations?: string;
+    orderBy?: string;
+    limit?: string;
+    offset?: string;
+}

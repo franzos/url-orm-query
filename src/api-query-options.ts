@@ -1,6 +1,7 @@
+import { parseFilters, parseOrderBy, parseRelations } from "./extract";
 import { EntityMetadata, FindManyOptions, Repository } from "typeorm";
 import { Operator, Join } from "./enums";
-import { Where, Relation, QueryParams } from "./query-params";
+import { Where, Relation, QueryParams, QueryParamsRaw } from "./query-params";
 import { columnMeta, operatorValue, queryBuilderAssembly, splitQueryKey } from "./typeorm-operators";
 
 export class ApiQueryOptions<T> {
@@ -46,6 +47,9 @@ export class ApiQueryOptions<T> {
         this.params.offset = offset;
     }
 
+    /**
+     * Dump query params to URL query string
+     */
     toUrl() {
         let params = []
         if (this.params.where.length > 0) {
@@ -66,57 +70,24 @@ export class ApiQueryOptions<T> {
         return '?' + params.join('&');
     }
 
+    /**
+     * Load query params from URL query string
+     * takes the URL as it comes
+     * @param queryString 
+     * @returns 
+     */
     fromUrl(queryString: string) {
         const params = new URLSearchParams(queryString);
         for (const [key, value] of params) {
             switch (key) {
                 case 'filters':
-                    this.params.where = value.split(',').map(filter => {
-                        const filters = filter.split('~')
-                        if (filters.length === 2) {
-                            const [key, value] = filters
-                            return {
-                                key: key as T[keyof T],
-                                operator: Operator.EQUAL,
-                                value: value as T[keyof T]
-                            }
-                        } else {
-                            const [key, operator, value] = filters
-                            return {
-                                key: key as T[keyof T],
-                                operator: operator as Operator,
-                                value: value as T[keyof T]
-                            }
-                        }
-                    })
+                    this.params.where = parseFilters<T>(value)
                     break
                 case 'relations':
-                    this.params.relations = value.split(',').map(relation => {
-                        const relations = relation.split('~')
-                        // If no join type is specified, default to LEFT_SELECT
-                        if (relations.length === 1) {
-                            return {
-                                name: relations[0],
-                                join: Join.LEFT_SELECT
-                            }
-                        } else {
-                            const [name, join] = relations
-                            return {
-                                name,
-                                join: join as Join
-                                // TODO: add type
-                            } as any
-                        }
-                    })
+                    this.params.relations = parseRelations<T>(value)
                     break
                 case 'orderBy':
-                    this.params.orderBy = value.split(',').map(orderBy => {
-                        const [key, direction] = orderBy.split('~')
-                        return {
-                            key,
-                            direction
-                        } as any
-                    })
+                    this.params.orderBy = parseOrderBy<T>(value)
                     break
                 case 'limit':
                     this.params.limit = parseInt(value)
@@ -125,6 +96,29 @@ export class ApiQueryOptions<T> {
                     this.params.offset = parseInt(value)
                     break
             }
+        }
+        return this
+    }
+
+    /**
+     * Load query params from controller Query (ParameterDecorator)
+     * take the partially parsed query as it comes
+     */
+    fromController(queryData: QueryParamsRaw) {
+        if (queryData.filters) {
+            this.params.where = parseFilters<T>(queryData.filters)
+        }
+        if (queryData.relations) {
+            this.params.relations = parseRelations<T>(queryData.relations)
+        }
+        if (queryData.orderBy) {
+            this.params.orderBy = parseOrderBy<T>(queryData.orderBy)
+        }
+        if (queryData.limit) {
+            this.params.limit = Number(queryData.limit)
+        }
+        if (queryData.offset) {
+            this.params.offset = Number(queryData.offset)
         }
         return this
     }
