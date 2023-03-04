@@ -2,7 +2,7 @@ import { DataSource, EntityMetadata } from 'typeorm'
 import TestDataSource from "./utils/ormconfig"
 import { seed } from "./utils/seed"
 import { Organization, User } from './entities'
-import { ApiPagination, ApiQueryOptions, Operator } from '../src'
+import { ApiPagination, ApiQueryOptions, Operator, QueryParamsUpdate } from '../src'
 import { usersSeed } from './utils/seed-data'
 
 let db: DataSource
@@ -701,6 +701,156 @@ describe('Pagination', () => {
 
         const urlAfter2 = pagination.changePage(3)
         expect(urlAfter2).toBe('?filters=organization.name~EQUAL~Truper Corp.&limit=10&offset=20')
+    })
+
+    it('basics with other params and required key', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'organization.name',
+                    operator: Operator.EQUAL,
+                    value: 'Truper Corp.',
+                    require: true
+                },
+                {
+                    key: 'age',
+                    operator: Operator.EQUAL,
+                    value: '48'
+                }
+            ],
+            limit: 10,
+        })
+        const pagination = new ApiPagination(query)
+        pagination.setTotal(100)
+        expect(pagination.perPage).toBe(10)
+        expect(pagination.currentPage).toBe(1)
+        expect(pagination.totalPages).toBe(10)
+        expect(pagination.total).toBe(100)
+
+        pagination.loadAndMerge({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.EQUAL,
+                    value: '50'
+                }
+            ],
+            page: 2
+        })
+
+        expect(pagination.apiQueryOptions.params.where).toStrictEqual([
+            {
+                key: 'organization.name',
+                operator: Operator.EQUAL,
+                value: 'Truper Corp.',
+                require: true
+            },
+            {
+                key: 'age',
+                operator: Operator.EQUAL,
+                value: '50'
+            }
+        ])
+        expect(pagination.currentPage).toBe(2)
+
+        const url = pagination.url()
+        expect(url).toBe('?filters=organization.name~EQUAL~Truper Corp.,age~EQUAL~50&limit=10&offset=10')
+
+        pagination.loadAndMerge({
+            where: [
+                {
+                    key: 'firstName',
+                    operator: Operator.EQUAL,
+                    value: 'Perce'
+                }
+            ],
+            page: 2
+        })
+
+        expect(pagination.apiQueryOptions.params.where).toStrictEqual([
+            {
+                key: 'organization.name',
+                operator: Operator.EQUAL,
+                value: 'Truper Corp.',
+                require: true
+            },
+            {
+                key: 'firstName',
+                operator: Operator.EQUAL,
+                value: 'Perce'
+            }
+        ])
+        expect(pagination.currentPage).toBe(2)
+
+        pagination.loadAndMerge({
+            clearParams: true
+        })
+
+        expect(pagination.apiQueryOptions.params.where).toStrictEqual([])
+        expect(pagination.currentPage).toBe(1)
+    })
+
+    it('basics with other params and required key - only rely on loadAndMerge', async () => {
+        const query: QueryParamsUpdate<User> = {
+            where: [
+                {
+                    key: 'organization.name',
+                    operator: Operator.EQUAL,
+                    value: 'Truper Corp.',
+                    require: true
+                },
+                {
+                    key: 'age',
+                    operator: Operator.EQUAL,
+                    value: '48'
+                }
+            ],
+            limit: 10,
+        }
+        const pagination = new ApiPagination<User>()
+        pagination.loadAndMerge(query)
+        pagination.setTotal(100)
+        expect(pagination.perPage).toBe(10)
+        expect(pagination.currentPage).toBe(1)
+        expect(pagination.totalPages).toBe(10)
+        expect(pagination.total).toBe(100)
+
+        pagination.loadAndMerge({
+            where: [
+                {
+                    key: 'age',
+                    operator: Operator.EQUAL,
+                    value: '50'
+                }
+            ],
+            page: 2
+        })
+
+        expect(pagination.apiQueryOptions.params.where).toStrictEqual([
+            {
+                key: 'organization.name',
+                operator: Operator.EQUAL,
+                value: 'Truper Corp.',
+                require: true
+            },
+            {
+                key: 'age',
+                operator: Operator.EQUAL,
+                value: '50'
+            }
+        ])
+        expect(pagination.currentPage).toBe(2)
+
+        const url = pagination.url()
+        console.log(url)
+        expect(url).toBe('?filters=organization.name~EQUAL~Truper Corp.,age~EQUAL~50&limit=10&offset=10')
+
+        pagination.loadAndMerge({
+            clearParams: true
+        })
+
+        expect(pagination.apiQueryOptions.params.where).toStrictEqual([])
+        expect(pagination.currentPage).toBe(1)
     })
 
 })

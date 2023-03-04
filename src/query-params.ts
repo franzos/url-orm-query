@@ -1,4 +1,5 @@
-import { Join, Operator } from "./enums/index.js";
+import { Operator } from "./enums/operator";
+import { Join } from "./enums/join";
 
 // keyof T: works for actual name detection (firstName, lastName, etc.)
 // T[keyof T]: works for type detection (string, number, etc.)
@@ -6,6 +7,15 @@ export interface Where<T> {
     key: T[keyof T];
     value: T[keyof T];
     operator: Operator;
+}
+
+/**
+ * This exists primarily for front-end usage
+ * - You might want to make a couple of filters required on load
+ * - and subsequently, add or modify them, keeping required filters in place
+ */
+export interface WhereWithRequire<T> extends Where<T> {
+    require?: boolean;
 }
 
 export interface Relation<T> {
@@ -19,11 +29,22 @@ export interface OrderBy<T> {
 }
 
 export class QueryParams<T> {
-    where?: Where<T>[];
+    where?: WhereWithRequire<T>[];
     relations?: Relation<T>[];
     limit?: number;
     offset?: number;
     orderBy?: OrderBy<T>[];
+}
+
+export class QueryParamsUpdate<T> extends QueryParams<T> {
+    /**
+     * Clear filters, offset and orderBy
+     */
+    clearParams?: boolean;
+    /** 
+     * To be used with ApiPagination, instead of changePage()
+     */
+    page?: number;
 }
 
 /**

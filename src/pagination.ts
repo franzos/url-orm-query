@@ -1,4 +1,5 @@
-import { ApiQueryOptions } from "./api-query-options.js";
+import { QueryParamsUpdate } from "./query-params";
+import { ApiQueryOptions } from "./api-query-options";
 
 /**
  * Easy pagination based on ApiQueryOptions
@@ -25,8 +26,12 @@ export class ApiPagination<T> {
      * @param apiQueryOptions query options with filters, relations, order by, limit and offset
      * @param perPage results per page (defaults to apiQueryOptions.params.limit)
      */
-    constructor(apiQueryOptions: ApiQueryOptions<T>, perPage?: number) {
-        this.apiQueryOptions = apiQueryOptions;
+    constructor(apiQueryOptions?: ApiQueryOptions<T>, perPage?: number) {
+        if (apiQueryOptions) {
+            this.apiQueryOptions = apiQueryOptions;
+        } else {
+            this.apiQueryOptions = new ApiQueryOptions<T>();
+        }
         if (perPage) {
             this.perPage = perPage;
         } else {
@@ -63,5 +68,19 @@ export class ApiPagination<T> {
     changePage(page: number) {
         this.setCurrentPage(page);
         return this.apiQueryOptions.toUrl();
+    }
+
+    /**
+     * This is for subsequent calls
+     * @param params 
+     */
+    loadAndMerge(params: QueryParamsUpdate<T>) {
+        this.apiQueryOptions.loadAndMerge(params);
+        if (params.page) {
+            this.setCurrentPage(params.page);
+        }
+        if (params.clearParams) {
+            this.currentPage = 1;
+        }
     }
 }

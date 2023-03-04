@@ -1,8 +1,8 @@
 import { EntityMetadata, FindManyOptions, Repository } from "typeorm";
-import { parseFilters, parseOrderBy, parseRelations } from "./extract.js";
-import { Join } from "./enums/index.js";
-import { Where, Relation, QueryParams, QueryParamsRaw } from "./query-params.js";
-import { columnMeta, operatorValue, queryBuilderAssembly, splitQueryKey } from "./typeorm-operators.js";
+import { parseFilters, parseOrderBy, parseRelations } from "./extract";
+import { Join } from "./enums/join";
+import { Where, Relation, QueryParams, QueryParamsRaw, WhereWithRequire, QueryParamsUpdate } from "./query-params";
+import { columnMeta, operatorValue, queryBuilderAssembly, splitQueryKey } from "./typeorm-operators";
 
 export class ApiQueryOptions<T> {
     public params: QueryParams<T>
@@ -31,7 +31,38 @@ export class ApiQueryOptions<T> {
         };
     }
 
-    addFilter(filter: Where<T>) {
+    /**
+     * This is load but for subsequent calls, but can also load the first time
+     * @param params 
+     */
+    loadAndMerge(params: QueryParamsUpdate<T>) {
+        if (params.clearParams) {
+            this.clearParams();
+        }
+        if (params.where) {
+            const where: WhereWithRequire<T>[] = this.params.where.filter(filter => filter.require);
+            params.where.forEach(filter => {
+                const index = where.findIndex(f => f.key === filter.key);
+                if (index > -1 && !filter.require) {
+                    where[index] = filter;
+                } else {
+                    where.push(filter);
+                }
+            })
+            this.params.where = where;
+        }
+        if (params.relations) {
+            this.params.relations = params.relations;
+        }
+        if (params.limit) {
+            this.params.limit = params.limit;
+        }
+        if (params.offset) {
+            this.params.offset = params.offset;
+        }
+    }
+
+    addFilter(filter: Where<T> | WhereWithRequire<T>) {
         this.params.where.push(filter);
     }
 
@@ -45,6 +76,12 @@ export class ApiQueryOptions<T> {
 
     setOffset(offset: number) {
         this.params.offset = offset;
+    }
+
+    clearParams() {
+        this.params.where = [];
+        this.params.offset = 0;
+        this.params.orderBy = [];
     }
 
     /**
