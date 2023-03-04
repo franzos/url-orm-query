@@ -1,6 +1,6 @@
 {
   "name": "url-orm-query",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "End-to-end URL to TypeORM query builder",
   "author": "Franz Geffke <franz@pantherx.org>",
   "license": "MIT",
