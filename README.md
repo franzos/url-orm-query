@@ -186,3 +186,10 @@ Create a new migration (replace 'initial' with the name of the migration):
 ```bash
 docker-compose run app pnpm run typeorm migration:generate tests/migrations/initial
 ```
+
+## Publish
+
+```
+pnpm publish --registry=https://npm.pantherx.org
+pnpm publish --registry=https://registry.npmjs.org
+```
