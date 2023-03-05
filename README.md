@@ -155,6 +155,58 @@ const page3 = pagination.changePage(3)
 // '?filters=organization.name~EQUAL~Truper Corp.&limit=10&offset=20'
 ```
 
+## Frontend usage example
+
+```typescript
+// Set a default query param with 'require: true'. This will when updating or removing other filter.
+const query: QueryParamsUpdate<User> = {
+    where: [
+        {
+            key: 'organization.name',
+            operator: Operator.EQUAL,
+            value: 'Truper Corp.',
+            require: true
+        },
+        {
+            key: 'age',
+            operator: Operator.EQUAL,
+            value: '48'
+        }
+    ],
+    relations: {[
+        {
+            name: 'organization',
+        }
+    ]}
+    limit: 10,
+}
+
+// Store in state
+const queryParams = new ApiPagination<User>()
+queryParams.loadAndMerge(query)
+
+// Get URL query params for api call
+let url = queryParams.url()
+
+// Set total count from backend response
+queryParams.setTotal(100)
+
+// Update query params / change page
+queryParams.loadAndMerge({
+    where: [
+        {
+            key: 'age',
+            operator: Operator.EQUAL,
+            value: '50'
+        }
+    ],
+    page: 2
+})
+
+// Get new URL query params
+url = queryParams.url()
+```
+
 # Tests
 
 Run tests:
