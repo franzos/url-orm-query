@@ -71,18 +71,22 @@ export class ApiQueryOptions<T> {
 
     addFilter(filter: Where<T> | WhereWithRequire<T>) {
         this.params.where.push(filter);
+        return this
     }
 
     addRelation(relation: Relation<T>) {
         this.params.relations.push(relation);
+        return this
     }
 
     setLimit(limit: number) {
         this.params.limit = limit;
+        return this
     }
 
     setOffset(offset: number) {
         this.params.offset = offset;
+        return this
     }
 
     clearParams() {
@@ -149,6 +153,9 @@ export class ApiQueryOptions<T> {
      * take the partially parsed query as it comes
      */
     fromController(queryData: QueryParamsRaw) {
+        if (!queryData) {
+            return this;
+        }
         if (queryData.filters) {
             this.params.where = parseFilters<T>(queryData.filters)
         }

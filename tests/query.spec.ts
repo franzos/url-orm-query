@@ -2,7 +2,7 @@ import { DataSource, EntityMetadata } from 'typeorm'
 import TestDataSource from "./utils/ormconfig"
 import { seed } from "./utils/seed"
 import { Organization, User } from './entities'
-import { ApiPagination, ApiQueryOptions, Operator, QueryParamsUpdate } from '../src'
+import { ApiPagination, ApiQueryOptions, Operator, QueryParamsRaw, QueryParamsUpdate } from '../src'
 import { usersSeed } from './utils/seed-data'
 
 let db: DataSource
@@ -59,6 +59,26 @@ describe('Typeorm find options', () => {
             limit: `10`
         }
         const query = new ApiQueryOptions<User>().fromController(queryParams).toTypeOrmQuery(userEntityMeta(db))
+        const userRepository = db.getRepository(User)
+        const user = await userRepository.findOne(query) as User
+
+        expect(user.firstName).toBe(usersSeed[0].firstName)
+        expect(user.organization.id).toBeDefined()
+    })
+
+    it('undefined query params but additional filter', async () => {
+        const queryParams = undefined as unknown as QueryParamsRaw
+        const query = new ApiQueryOptions<User>()
+            .fromController(queryParams)
+            .addFilter({
+                key: 'firstName',
+                operator: Operator.EQUAL,
+                value: usersSeed[0].firstName as string
+            })
+            .addRelation({
+                name: 'organization'
+            })
+            .toTypeOrmQuery(userEntityMeta(db))
         const userRepository = db.getRepository(User)
         const user = await userRepository.findOne(query) as User
 
