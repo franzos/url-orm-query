@@ -2,8 +2,6 @@
 
 This library makes it easy to pass query params from front-end, via URL params, to a TypeORM backend.
 
-It's hardly complete and only useful for basic needs.
-
 ## Installation
 
 The package is available here: https://npm.pantherx.org/-/web/detail/url-orm-query. If you setup your npmrc to use this registry, you can install it...
@@ -72,7 +70,10 @@ const query = new ApiQueryOptions<User>({
             value: 'Some'
         }
     ],
-    relations: ['organization'],
+    relations: [{
+        name: 'organization',
+        type: RelationType.LEFT_SELECT
+    }],
     limit: 10
     offset: 0
 }).toUrl()
@@ -84,7 +85,9 @@ Backend:
 
 ```typescript
 const url = '?filters=firstName~EQUAL~Some'
-const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQuery()
+const query = new ApiQueryOptions<User>()
+    .fromUrl(url)
+    .toTypeOrmQuery()
 const userRepository = db.getRepository(User)
 const user = await userRepository.findOne(query)
 ```
@@ -95,7 +98,28 @@ Backend:
 
 ```typescript
 const url = '?filters=firstName~EQUAL~Some'
-const query = new ApiQueryOptions<User>().fromUrl(url).toTypeormQueryBuilder(db.getRepository(Organization))
+const query = new ApiQueryOptions<User>()
+    .fromUrl(url)
+    .toTypeormQueryBuilder(db.getRepository(Organization))
+const user = await query.getOne()
+```
+
+Chaining:
+
+```typescript
+const url = '?filters=firstName~EQUAL~Some'
+const query = new ApiQueryOptions<User>()
+    .fromUrl(url)
+    .addFilter({
+        key: 'id',
+        operator: Operator.EQUAL,
+        value: '4831020f-57f6-4258-8ee2-39c4766727e8'
+    })
+    .addRelation({
+        name: 'organization',
+        type: RelationType.LEFT_SELECT
+    })
+    .toTypeormQueryBuilder(db.getRepository(Organization))
 const user = await query.getOne()
 ```
 
@@ -117,7 +141,7 @@ age~EQUAL~48
 &relations=organization~JOIN
 ```
 
-Simple filters (EQUAL) and relations (LEFT_SELECT)
+Simple filters (default EQUAL) and relations (default LEFT_SELECT)
 
 ```bash
 ?filters=firstName~Some
@@ -241,7 +265,7 @@ docker-compose run app pnpm run typeorm migration:generate tests/migrations/init
 
 ## Publish
 
-```
+```bash
 pnpm publish --registry=https://npm.pantherx.org
 pnpm publish --registry=https://registry.npmjs.org
 ```

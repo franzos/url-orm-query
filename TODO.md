@@ -1,0 +1,3 @@
+- [ ] Support for more operators
+- [ ] Type safety
+- [ ] Validation
