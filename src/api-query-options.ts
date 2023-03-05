@@ -61,6 +61,9 @@ export class ApiQueryOptions<T> {
                 };
             })
         }
+        if (params.orderBy) {
+            this.params.orderBy = params.orderBy;
+        }
         if (params.limit) {
             this.params.limit = params.limit;
         }
