@@ -42,17 +42,24 @@ export class ApiQueryOptions<T> {
         if (params.where) {
             const where: WhereWithRequire<T>[] = this.params.where.filter(filter => filter.require);
             params.where.forEach(filter => {
-                const index = where.findIndex(f => f.key === filter.key);
-                if (index > -1 && !filter.require) {
-                    where[index] = filter;
-                } else {
-                    where.push(filter);
+                if (filter.value !== '') {
+                    const index = where.findIndex(f => f.key === filter.key);
+                    if (index > -1 && !filter.require) {
+                        where[index] = filter;
+                    } else {
+                        where.push(filter);
+                    }
                 }
             })
             this.params.where = where;
         }
         if (params.relations) {
-            this.params.relations = params.relations;
+            this.params.relations = params.relations.map(relation => {
+                return {
+                    name: relation.name,
+                    join: relation.join || Join.LEFT_SELECT
+                };
+            })
         }
         if (params.limit) {
             this.params.limit = params.limit;
