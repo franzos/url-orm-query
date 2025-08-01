@@ -2,23 +2,20 @@
 
 version: '3.7'
 services:
-  postgres:
-    container_name: db
-    image: postgres:14-alpine
+  url_orm_query_postgres:
+    container_name: url_orm_query_postgres
+    image: postgres:16-alpine
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: dev
-    ports:
-      - '5432:5432'
-  app:
-    container_name: test
+  url_orm_query_app:
+    container_name: url_orm_query_app
     image: test_image
     build:
       context: .
       network: host
-    network_mode: 'host'
     depends_on:
-      - postgres
+      - url_orm_query_postgres
     volumes:
       - .:/usr/src/app
     command: > 
