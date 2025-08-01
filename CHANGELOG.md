@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.1] - 2025-08-01
+
+### Changed
+- Add CI automation
+
 ## [0.1.0] - 2025-08-01
 
 ### Changed
