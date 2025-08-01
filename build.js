@@ -1,14 +1,15 @@
 const esbuild = require('esbuild');
-const { nodeExternalsPlugin } = require('esbuild-node-externals');
+const { nodeExternalsPlugin } = require("esbuild-node-externals");
 
 const shared = {
-    entryPoints: ['./src/index.ts'],
-    bundle: true,
-    treeShaking: true,
-    platform: 'node',
-    target: 'node14',
-    plugins: [nodeExternalsPlugin()],
-}
+  entryPoints: ["./src/index.ts"],
+  bundle: true,
+  treeShaking: true,
+  platform: "node",
+  target: "node22",
+  external: ["typeorm"],
+  plugins: [nodeExternalsPlugin()],
+};
 
 esbuild.build({
     ...shared,
