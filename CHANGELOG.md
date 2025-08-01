@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.2] - 2025-08-01
+### Fixed
+- Dependencies lock
+
 ## [0.1.1] - 2025-08-01
 
 ### Changed

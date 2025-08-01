@@ -1,6 +1,6 @@
 {
   "name": "url-orm-query",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "End-to-end URL to TypeORM query builder",
   "author": "Franz Geffke <mail@gofranz.com>",
   "repository": "https://github.com/franzos/url-orm-query",
