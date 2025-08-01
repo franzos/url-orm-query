@@ -1,7 +1,20 @@
-import { Any, Between, Brackets, EntityMetadata, ILike, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, ObjectLiteral, Repository } from "typeorm";
-import { ColumnMetadata } from "typeorm/metadata/ColumnMetadata";
 import { Operator } from "./enums/operator";
 import { Where } from "./query-params";
+import {
+    Any,
+    Between,
+    ColumnMetadata,
+    EntityMetadata,
+    ILike,
+    In,
+    LessThan,
+    LessThanOrEqual,
+    Like,
+    MoreThan,
+    MoreThanOrEqual,
+    Not,
+    Repository
+} from "./typeorm-interfaces";
 
 export function isRelation(key: string, entityMeta: EntityMetadata) {
     return entityMeta.ownRelations.find(c => c.propertyName === key) !== undefined
@@ -14,11 +27,10 @@ export interface ColumnMeta {
 }
 
 export function columnMeta(key: string, entityMeta: EntityMetadata) {
-    const column = entityMeta.columns.find(c => c.propertyName === key);
     return {
         isRelation: isRelation(key, entityMeta),
-        isJsonb: column?.type === 'jsonb',
-        meta: column
+        isJsonb: entityMeta.columns.find(c => c.propertyName === key)?.type === 'jsonb',
+        meta: entityMeta.columns.find(c => c.propertyName === key)
     }
 }
 
@@ -98,7 +110,7 @@ export function queryBuilderOperator(opt: Operator) {
     }
 }
 
-export function queryBuilderAssembly<T extends ObjectLiteral>(repo: Repository<T>, filter: Where<T>): [string | ObjectLiteral | Brackets | ObjectLiteral[], ObjectLiteral] {
+export function queryBuilderAssembly<T>(repo: Repository<T>, filter: Where<T>): [string | any, any] {
     const table = repo.metadata.tableName
     const keys = splitQueryKey(filter.key as string)
     const firstKey = keys[0]

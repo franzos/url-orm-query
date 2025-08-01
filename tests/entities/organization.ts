@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 import { Address } from './address';
 
 @Entity()
@@ -16,4 +16,7 @@ export class Organization {
         type: 'jsonb',
     })
     address: Address
+
+    @CreateDateColumn()
+    createdAt: Date;
 }

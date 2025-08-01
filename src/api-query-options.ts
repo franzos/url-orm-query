@@ -1,24 +1,25 @@
-import { EntityMetadata, FindManyOptions, Repository } from "typeorm";
-import { parseFilters, parseOrderBy, parseRelations } from "./extract";
 import { Join } from "./enums/join";
-import { Where, Relation, QueryParams, QueryParamsRaw, WhereWithRequire, QueryParamsUpdate } from "./query-params";
-import { columnMeta, operatorValue, queryBuilderAssembly, splitQueryKey } from "./typeorm-operators";
+import { parseFilters, parseOrderBy, parseRelations } from "./extract";
+import { columnMeta, operatorValue, queryBuilderAssembly, splitQueryKey } from "./operators";
+import { QueryParams, QueryParamsBuilder, QueryParamsRaw, QueryParamsUpdate, Relation, Where, WhereWithRequire } from "./query-params";
+import { EntityMetadata, FindManyOptions, Repository } from "./typeorm-interfaces";
 
 export class ApiQueryOptions<T> {
-    public params: QueryParams<T>
+    public params: QueryParamsBuilder<T>
 
     constructor(params?: QueryParams<T>) {
+        this.params = {
+            where: [],
+            relations: [],
+            limit: 10,
+            offset: 0,
+            orderBy: []
+        }
+
         if (params) {
             this.load(params)
-        } else {
-            this.params = {
-                where: [],
-                relations: [],
-                limit: 10,
-                offset: 0,
-                orderBy: []
-            }
         }
+
     }
 
     load(params: QueryParams<T>) {

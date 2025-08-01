@@ -4,6 +4,7 @@ import { seed } from "./utils/seed"
 import { Organization, User } from './entities'
 import { ApiPagination, ApiQueryOptions, Operator, QueryParamsRaw, QueryParamsUpdate } from '../src'
 import { usersSeed } from './utils/seed-data'
+import { USER_ROLE } from './entities/user-roles'
 
 let db: DataSource
 
@@ -322,6 +323,67 @@ describe('Typeorm find options', () => {
         expect(user.length).toBe(0)
     })
 
+    it('filter by role EMPLOYEE', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'role',
+                    operator: Operator.EQUAL,
+                    value: USER_ROLE.EMPLOYEE
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
+        expect(users.length).toBe(2)
+        for (const user of users) {
+            expect(user.role).toBe(USER_ROLE.EMPLOYEE)
+        }
+    })
+
+    it('filter by role MANAGER', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'role',
+                    operator: Operator.EQUAL,
+                    value: USER_ROLE.MANAGER
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
+        expect(users.length).toBe(1)
+        expect(users[0].role).toBe(USER_ROLE.MANAGER)
+        expect(users[0].firstName).toBe('Stine')
+    })
+
+    it('filter by role (url)', async () => {
+        const url = `?filters=role~EQUAL~${USER_ROLE.EMPLOYEE}&limit=10`
+        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQuery(userEntityMeta(db))
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query)
+        expect(users.length).toBe(2)
+        for (const user of users) {
+            expect(user.role).toBe(USER_ROLE.EMPLOYEE)
+        }
+    })
+
+    it('filter by multiple roles IN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'role',
+                    operator: Operator.IN,
+                    value: `${USER_ROLE.EMPLOYEE},${USER_ROLE.MANAGER}`
+                }
+            ],
+        })
+        const userRepository = db.getRepository(User)
+        const users = await userRepository.find(query.toTypeOrmQuery(userEntityMeta(db)))
+        expect(users.length).toBe(3)
+    })
+
     it('order by', async () => {
         const query = new ApiQueryOptions<User>({
             orderBy: [
@@ -367,6 +429,35 @@ describe('Typeorm query builder', () => {
         const user = await query.getOne() as User
 
         expect(user.firstName).toBe(usersSeed[0].firstName)
+    })
+
+    it('filter by username getOneOrFail - success', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'firstName',
+                    operator: Operator.EQUAL,
+                    value: 'Amias'
+                }
+            ]
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const user = await query.getOneOrFail()
+
+        expect(user.firstName).toBe(usersSeed[0].firstName)
+    })
+
+    it('filter by username getOneOrFail - should throw when not found', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'firstName',
+                    operator: Operator.EQUAL,
+                    value: 'NonExistentUser'
+                }
+            ]
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        
+        await expect(query.getOneOrFail()).rejects.toThrow()
     })
 
     it('filter by username and join relation', async () => {
@@ -671,6 +762,80 @@ describe('Typeorm query builder', () => {
         const query = new ApiQueryOptions<User>().fromUrl(url).toTypeormQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users[0].firstName).toBe('Perce')
+    })
+
+    it('filter by role EMPLOYEE', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'role',
+                    operator: Operator.EQUAL,
+                    value: USER_ROLE.EMPLOYEE
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(2)
+        for (const user of users) {
+            expect(user.role).toBe(USER_ROLE.EMPLOYEE)
+        }
+    })
+
+    it('filter by role MANAGER', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'role',
+                    operator: Operator.EQUAL,
+                    value: USER_ROLE.MANAGER
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(1)
+        expect(users[0].role).toBe(USER_ROLE.MANAGER)
+        expect(users[0].firstName).toBe('Stine')
+    })
+
+    it('filter by role (url)', async () => {
+        const url = `?filters=role~EQUAL~${USER_ROLE.EMPLOYEE}&limit=10`
+        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(2)
+        for (const user of users) {
+            expect(user.role).toBe(USER_ROLE.EMPLOYEE)
+        }
+    })
+
+    it('filter by multiple roles IN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'role',
+                    operator: Operator.IN,
+                    value: `${USER_ROLE.EMPLOYEE},${USER_ROLE.MANAGER}`
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(3)
+    })
+
+    it('filter by role NOT_IN', async () => {
+        const query = new ApiQueryOptions<User>({
+            where: [
+                {
+                    key: 'role',
+                    operator: Operator.NOT_IN,
+                    value: USER_ROLE.MANAGER
+                }
+            ],
+        }).toTypeormQueryBuilder(db.getRepository(User))
+        const users = await query.getMany()
+        expect(users.length).toBe(2)
+        for (const user of users) {
+            expect(user.role).toBe(USER_ROLE.EMPLOYEE)
+        }
     })
 })
 

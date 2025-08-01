@@ -32,11 +32,13 @@ export class ApiPagination<T> {
         } else {
             this.apiQueryOptions = new ApiQueryOptions<T>();
         }
+
         if (perPage) {
             this.perPage = perPage;
         } else {
             this.perPage = this.apiQueryOptions.params.limit;
         }
+
         this.currentPage = 1;
     }
 

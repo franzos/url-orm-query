@@ -1,8 +1,6 @@
 import { Operator } from "./enums/operator";
 import { Join } from "./enums/join";
 
-// keyof T: works for actual name detection (firstName, lastName, etc.)
-// T[keyof T]: works for type detection (string, number, etc.)
 export interface Where<T> {
     key: T[keyof T];
     value: T[keyof T];
@@ -28,7 +26,7 @@ export interface OrderBy<T> {
     direction: 'ASC' | 'DESC';
 }
 
-export class QueryParams<T> {
+export interface QueryParams<T> {
     where?: WhereWithRequire<T>[];
     relations?: Relation<T>[];
     limit?: number;
@@ -36,7 +34,15 @@ export class QueryParams<T> {
     orderBy?: OrderBy<T>[];
 }
 
-export class QueryParamsUpdate<T> extends QueryParams<T> {
+export interface QueryParamsBuilder<T> extends QueryParams<T> {
+    where: WhereWithRequire<T>[];
+    relations: Relation<T>[];
+    limit: number;
+    offset: number;
+    orderBy: OrderBy<T>[];
+}
+
+export interface QueryParamsUpdate<T> extends QueryParams<T> {
     /**
      * Clear filters, offset and orderBy
      */
