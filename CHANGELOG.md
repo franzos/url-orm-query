@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0] - 2025-08-01
+
+### Added
+- Input validation with ValidationError class
+- Field validation against entity metadata
+
+### Changed
+- **BREAKING**: Improved type safety for query parameters
+- Refactored into modular architecture (QueryParser, QueryBuilder, validation)
+- Standardized API naming: `toTypeOrmQueryBuilder`
+
+### Fixed
+- Parameter name conflicts in complex queries
+- Issue where `toUrl()` with relations would result in queries like `relations=user~undefined`
+- Type compatibility issues
+
 ## [0.1.2] - 2025-08-01
 ### Fixed
 - Dependencies lock

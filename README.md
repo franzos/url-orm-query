@@ -1,6 +1,8 @@
-# Api Query Library (URL to ORM)
+# TypeORM Frontend Query Library (URL to ORM)
 
-This library makes it easy to pass query params from front-end, via URL params, to a TypeORM backend.
+This library makes it easy to pass query params from front-end, via URL params, to a TypeORM backend. Tested with TypeORM `^0.3.25`.
+
+**Version:** 0.2.0
 
 **Important: This is just an old toy-project that shouldn't be used in production.**
 
@@ -72,7 +74,7 @@ const query = new ApiQueryOptions<User>({
     ],
     relations: [{
         name: 'organization',
-        type: RelationType.LEFT_SELECT
+        type: Join.LEFT_SELECT
     }],
     limit: 10
     offset: 0
@@ -117,7 +119,7 @@ const query = new ApiQueryOptions<User>()
     })
     .addRelation({
         name: 'organization',
-        type: RelationType.LEFT_SELECT
+        type: Join.LEFT_SELECT
     })
     .toTypeormQueryBuilder(db.getRepository(Organization))
 const user = await query.getOne()
@@ -261,11 +263,4 @@ Create a new migration (replace 'initial' with the name of the migration):
 
 ```bash
 docker-compose run app pnpm run typeorm migration:generate tests/migrations/initial
-```
-
-## Publish
-
-```bash
-pnpm publish --registry=https://npm.pantherx.org
-pnpm publish --registry=https://registry.npmjs.org
 ```
