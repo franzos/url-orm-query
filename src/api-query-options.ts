@@ -1,8 +1,9 @@
 import { Join } from "./enums/join";
-import { parseFilters, parseOrderBy, parseRelations } from "./extract";
-import { columnMeta, operatorValue, queryBuilderAssembly, splitQueryKey } from "./operators";
+import { QueryBuilder } from "./query-builder";
 import { QueryParams, QueryParamsBuilder, QueryParamsRaw, QueryParamsUpdate, Relation, Where, WhereWithRequire } from "./query-params";
-import { EntityMetadata, FindManyOptions, Repository } from "./typeorm-interfaces";
+import { QueryParser } from "./query-parser";
+import { EntityMetadata, Repository } from "./typeorm-interfaces";
+import { validateRelation, validateWhere, validateOrderBy, validateLimit, validateOffset } from "./validation";
 
 export class ApiQueryOptions<T> {
     public params: QueryParamsBuilder<T>
@@ -23,6 +24,23 @@ export class ApiQueryOptions<T> {
     }
 
     load(params: QueryParams<T>) {
+        // Validate input parameters
+        if (params.where) {
+            params.where.forEach(where => validateWhere(where));
+        }
+        if (params.relations) {
+            params.relations.forEach(relation => validateRelation(relation));
+        }
+        if (params.orderBy) {
+            params.orderBy.forEach(orderBy => validateOrderBy(orderBy));
+        }
+        if (params.limit !== undefined) {
+            validateLimit(params.limit);
+        }
+        if (params.offset !== undefined) {
+            validateOffset(params.offset);
+        }
+
         this.params = {
             where: params.where || [],
             relations: params.relations || [],
@@ -37,6 +55,23 @@ export class ApiQueryOptions<T> {
      * @param params 
      */
     loadAndMerge(params: QueryParamsUpdate<T>) {
+        // Validate input parameters
+        if (params.where) {
+            params.where.forEach(where => validateWhere(where));
+        }
+        if (params.relations) {
+            params.relations.forEach(relation => validateRelation(relation));
+        }
+        if (params.orderBy) {
+            params.orderBy.forEach(orderBy => validateOrderBy(orderBy));
+        }
+        if (params.limit !== undefined) {
+            validateLimit(params.limit);
+        }
+        if (params.offset !== undefined) {
+            validateOffset(params.offset);
+        }
+
         if (params.clearParams) {
             this.clearParams();
         }
@@ -74,21 +109,25 @@ export class ApiQueryOptions<T> {
     }
 
     addFilter(filter: Where<T> | WhereWithRequire<T>) {
+        validateWhere(filter);
         this.params.where.push(filter);
         return this
     }
 
     addRelation(relation: Relation<T>) {
+        validateRelation(relation);
         this.params.relations.push(relation);
         return this
     }
 
     setLimit(limit: number) {
+        validateLimit(limit);
         this.params.limit = limit;
         return this
     }
 
     setOffset(offset: number) {
+        validateOffset(offset);
         this.params.offset = offset;
         return this
     }
@@ -105,13 +144,13 @@ export class ApiQueryOptions<T> {
     toUrl() {
         let params = []
         if (this.params.where.length > 0) {
-            params.push(`filters=${this.params.where.map(filter => `${filter.key}~${filter.operator}~${filter.value}`).join(',')}`)
+            params.push(`filters=${this.params.where.map(filter => `${String(filter.key)}~${filter.operator}~${filter.value}`).join(',')}`)
         }
         if (this.params.relations.length > 0) {
-            params.push(`relations=${this.params.relations.map(relation => `${relation.name}~${relation.join}`).join(',')}`);
+            params.push(`relations=${this.params.relations.map(relation => `${String(relation.name)}~${relation.join ?? Join.LEFT_SELECT}`).join(',')}`);
         }
         if (this.params.orderBy.length > 0) {
-            params.push(`orderBy=${this.params.orderBy.map(orderBy => `${orderBy.key}~${orderBy.direction}`).join(',')}`);
+            params.push(`orderBy=${this.params.orderBy.map(orderBy => `${String(orderBy.key)}~${orderBy.direction}`).join(',')}`);
         }
         if (this.params.limit) {
             params.push(`limit=${this.params.limit}`);
@@ -129,26 +168,7 @@ export class ApiQueryOptions<T> {
      * @returns 
      */
     fromUrl(queryString: string) {
-        const params = new URLSearchParams(queryString);
-        for (const [key, value] of params) {
-            switch (key) {
-                case 'filters':
-                    this.params.where = parseFilters<T>(value)
-                    break
-                case 'relations':
-                    this.params.relations = parseRelations<T>(value)
-                    break
-                case 'orderBy':
-                    this.params.orderBy = parseOrderBy<T>(value)
-                    break
-                case 'limit':
-                    this.params.limit = parseInt(value)
-                    break
-                case 'offset':
-                    this.params.offset = parseInt(value)
-                    break
-            }
-        }
+        this.params = QueryParser.fromUrl<T>(queryString);
         return this
     }
 
@@ -157,24 +177,7 @@ export class ApiQueryOptions<T> {
      * take the partially parsed query as it comes
      */
     fromController(queryData: QueryParamsRaw) {
-        if (!queryData) {
-            return this;
-        }
-        if (queryData.filters) {
-            this.params.where = parseFilters<T>(queryData.filters)
-        }
-        if (queryData.relations) {
-            this.params.relations = parseRelations<T>(queryData.relations)
-        }
-        if (queryData.orderBy) {
-            this.params.orderBy = parseOrderBy<T>(queryData.orderBy)
-        }
-        if (queryData.limit) {
-            this.params.limit = Number(queryData.limit)
-        }
-        if (queryData.offset) {
-            this.params.offset = Number(queryData.offset)
-        }
+        this.params = QueryParser.fromController<T>(queryData);
         return this
     }
 
@@ -186,102 +189,17 @@ export class ApiQueryOptions<T> {
      * @returns 
      */
     toTypeOrmQuery(entityMeta: EntityMetadata) {
-        let query: FindManyOptions<T> = {};
-        if (this.params.where.length > 0) {
-            for (const filter of this.params.where) {
-                if (!query.where) {
-                    query.where = {};
-                }
-                const keys = splitQueryKey(filter.key as string)
-                const firstKey = keys[0]
-                const meta = columnMeta(firstKey, entityMeta)
-                if (meta.isRelation) {
-                    query.where[firstKey] = {
-                        [keys[1]]: operatorValue<T>(filter)
-                    }
-                } else if (meta.isJsonb) {
-                    query.where[firstKey] = {
-                        [keys[1]]: operatorValue<T>(filter)
-                    }
-                } else {
-                    query.where[firstKey] = operatorValue<T>(filter)
-                }
-            }
-        }
-        if (this.params.relations.length > 0) {
-            for (const relation of this.params.relations) {
-                if (!query.relations) {
-                    query.relations = {};
-                }
-                const name = relation.name as string
-                query.relations[name] = true
-            }
-        }
-        if (this.params.orderBy) {
-            query.order = {};
-            for (const orderBy of this.params.orderBy) {
-                query.order[orderBy.key as string] = orderBy.direction;
-            }
-        }
-        if (this.params.limit) {
-            query.take = this.params.limit;
-        }
-        if (this.params.offset) {
-            query.skip = this.params.offset;
-        }
-        return query;
+        return QueryBuilder.toFindOptions<T>(this.params, entityMeta);
     }
 
+    toTypeOrmQueryBuilder(repo: Repository<T>) {
+        return QueryBuilder.toQueryBuilder<T>(this.params, repo);
+    }
+
+    /**
+     * @deprecated Use toTypeOrmQueryBuilder instead
+     */
     toTypeormQueryBuilder(repo: Repository<T>) {
-        const table = repo.metadata.tableName
-        let query = repo.createQueryBuilder(table)
-        if (this.params.where.length > 0) {
-            for (let i = 0; i < this.params.where.length; i++) {
-
-                const queryFunction = i === 0 ? 'where' : 'andWhere'
-
-                const queryParam = queryBuilderAssembly(
-                    repo,
-                    this.params.where[i],
-                )
-
-                query[queryFunction](queryParam[0], queryParam[1])
-            }
-        }
-        if (this.params.relations.length > 0) {
-            for (const relation of this.params.relations) {
-                const name = relation.name as string
-                switch (relation.join) {
-                    case Join.LEFT_SELECT:
-                        query.leftJoinAndSelect(`${table}.${name}`, name)
-                        break
-                    case Join.LEFT:
-                        query.leftJoin(`${table}.${name}`, name)
-                        break
-                    case Join.INNER_SELECT:
-                        query.innerJoinAndSelect(`${table}.${name}`, name)
-                        break
-                    case Join.INNER:
-                        query.innerJoin(`${table}.${name}`, name)
-                        break
-                    default:
-                        query.leftJoinAndSelect(`${table}.${name}`, name)
-                        break
-                }
-
-            }
-        }
-        if (this.params.orderBy.length > 0) {
-            for (const orderBy of this.params.orderBy) {
-                query.addOrderBy(`${table}.${orderBy.key as string}`, orderBy.direction)
-            }
-        }
-        if (this.params.limit) {
-            query.take(this.params.limit);
-        }
-        if (this.params.offset) {
-            query.skip(this.params.offset);
-        }
-        return query
+        return this.toTypeOrmQueryBuilder(repo);
     }
 }

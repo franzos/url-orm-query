@@ -1,5 +1,5 @@
-import { QueryParamsUpdate } from "./query-params";
 import { ApiQueryOptions } from "./api-query-options";
+import { QueryParamsUpdate } from "./query-params";
 
 /**
  * Easy pagination based on ApiQueryOptions
@@ -11,7 +11,7 @@ import { ApiQueryOptions } from "./api-query-options";
  * Usage:
  * 1. Create pagination object
  * 2. Set total number of results
- * 3. Use url() to get url for first page
+ * 3. Use toUrl() to get url for first page
  * 4. Use changePage() to get url for next page
  */
 export class ApiPagination<T> {
@@ -59,7 +59,7 @@ export class ApiPagination<T> {
         this.apiQueryOptions.setOffset((currentPage - 1) * this.perPage);
     }
 
-    url() {
+    toUrl() {
         return this.apiQueryOptions.toUrl();
     }
 
@@ -69,7 +69,7 @@ export class ApiPagination<T> {
     */
     changePage(page: number) {
         this.setCurrentPage(page);
-        return this.apiQueryOptions.toUrl();
+        return this.toUrl();
     }
 
     /**

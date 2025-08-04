@@ -2,8 +2,8 @@ import { Operator } from "./enums/operator";
 import { Join } from "./enums/join";
 
 export interface Where<T> {
-    key: T[keyof T];
-    value: T[keyof T];
+    key: keyof T | string;
+    value: T[keyof T] | string | string[];
     operator: Operator;
 }
 
@@ -17,12 +17,12 @@ export interface WhereWithRequire<T> extends Where<T> {
 }
 
 export interface Relation<T> {
-    name: T[keyof T];
+    name: keyof T | string;
     join?: Join;
 }
 
 export interface OrderBy<T> {
-    key: T[keyof T];
+    key: keyof T | string;
     direction: 'ASC' | 'DESC';
 }
 

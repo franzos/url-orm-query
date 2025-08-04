@@ -15,6 +15,7 @@ import {
     Not,
     Repository
 } from "./typeorm-interfaces";
+import { createSafeParameterName, validateFieldExists, validateOperatorValue, ValidationError } from "./validation";
 
 export function isRelation(key: string, entityMeta: EntityMetadata) {
     return entityMeta.ownRelations.find(c => c.propertyName === key) !== undefined
@@ -44,6 +45,8 @@ export function splitQueryKey(key: string) {
  * @returns 
  */
 export function operatorValue<T>(filter: Where<T>) {
+    validateOperatorValue(filter.operator, filter.value);
+    
     switch (filter.operator) {
         case Operator.EQUAL:
             return filter.value;
@@ -56,7 +59,7 @@ export function operatorValue<T>(filter: Where<T>) {
         case Operator.BETWEEN:
             const value = (filter.value as string).split(',')
             if (value.length !== 2) {
-                throw new Error(`Invalid value for BETWEEN operator. Expected 2 values, got ${filter.value}`);
+                throw new ValidationError(`Invalid value for BETWEEN operator. Expected 2 values, got ${filter.value}`);
             }
             return Between(value[0], value[1]);
         case Operator.IN:
@@ -72,7 +75,7 @@ export function operatorValue<T>(filter: Where<T>) {
         case Operator.MORE_THAN_OR_EQUAL:
             return MoreThanOrEqual(filter.value);
         default:
-            throw new Error(`Unknown operator: ${filter.operator}`);
+            throw new ValidationError(`Unknown operator: ${filter.operator}`);
     }
 }
 
@@ -110,11 +113,17 @@ export function queryBuilderOperator(opt: Operator) {
     }
 }
 
-export function queryBuilderAssembly<T>(repo: Repository<T>, filter: Where<T>): [string | any, any] {
+export function queryBuilderAssembly<T>(repo: Repository<T>, filter: Where<T>, index?: number): [string | any, any] {
+    const fieldName = filter.key as string;
+    validateFieldExists(fieldName, repo.metadata);
+    validateOperatorValue(filter.operator, filter.value);
+    
     const table = repo.metadata.tableName
-    const keys = splitQueryKey(filter.key as string)
+    const keys = splitQueryKey(fieldName)
     const firstKey = keys[0]
     const columnMetadata = columnMeta(firstKey, repo.metadata)
+
+    const safeParamName = createSafeParameterName(firstKey, index);
     
     // for ex. 'user.name'
     let tableColumn: string;
@@ -133,38 +142,38 @@ export function queryBuilderAssembly<T>(repo: Repository<T>, filter: Where<T>): 
     // for ex. '='
     const queryOperator = queryBuilderOperator(filter.operator)
 
-    let filterValue: T[keyof T] | string[] = filter.value
+    let filterValue: T[keyof T] | string | string[] = filter.value
 
     switch (filter.operator) {
         case Operator.EQUAL:
-            return [`${tableColumn} ${queryOperator} :${firstKey}`, { [firstKey]: filterValue }]
+            return [`${tableColumn} ${queryOperator} :${safeParamName}`, { [safeParamName]: filterValue }]
         case Operator.NOT:
-            return [`${tableColumn} ${queryOperator} :${firstKey}`, { [firstKey]: filterValue }]
+            return [`${tableColumn} ${queryOperator} :${safeParamName}`, { [safeParamName]: filterValue }]
         case Operator.LIKE:
-            return [`${tableColumn} ${queryOperator} :${firstKey}`, { [firstKey]: `%${filterValue}%` }]
+            return [`${tableColumn} ${queryOperator} :${safeParamName}`, { [safeParamName]: `%${filterValue}%` }]
         case Operator.ILIKE:
-            return [`${tableColumn} ${queryOperator} :${firstKey}`, { [firstKey]: `%${(filterValue as string).toLowerCase()}%` }]
+            return [`${tableColumn} ${queryOperator} :${safeParamName}`, { [safeParamName]: `%${(filterValue as string).toLowerCase()}%` }]
         case Operator.BETWEEN:
             filterValue = (filter.value as string).split(',')
             if (filterValue.length !== 2) {
-                throw new Error(`Invalid value for BETWEEN operator. Expected 2 values, got ${filter.value}`);
+                throw new ValidationError(`Invalid value for BETWEEN operator. Expected 2 values, got ${filter.value}`);
             }
-            return [`${tableColumn} ${queryOperator} :FROM${firstKey} AND :TO${firstKey}`, { [`FROM${firstKey}`]: filterValue[0], [`TO${firstKey}`]: filterValue[1] }]
+            return [`${tableColumn} ${queryOperator} :FROM${safeParamName} AND :TO${safeParamName}`, { [`FROM${safeParamName}`]: filterValue[0], [`TO${safeParamName}`]: filterValue[1] }]
         case Operator.IN:
             filterValue = (filter.value as string).split(',')
-            return [`${tableColumn} ${queryOperator} (:...${firstKey}Ids)`, { [`${firstKey}Ids`]: filterValue}]
+            return [`${tableColumn} ${queryOperator} (:...${safeParamName}Ids)`, { [`${safeParamName}Ids`]: filterValue}]
         case Operator.NOT_IN:
             filterValue = (filter.value as string).split(',')
-            return [`${tableColumn} ${queryOperator} (:...${firstKey}Ids)`, { [`${firstKey}Ids`]: filterValue}]
+            return [`${tableColumn} ${queryOperator} (:...${safeParamName}Ids)`, { [`${safeParamName}Ids`]: filterValue}]
         case Operator.LESS_THAN:
-            return [`${tableColumn} ${queryOperator} :${firstKey}`, { [firstKey]: filterValue }]
+            return [`${tableColumn} ${queryOperator} :${safeParamName}`, { [safeParamName]: filterValue }]
         case Operator.LESS_THAN_OR_EQUAL:
-            return [`${tableColumn} ${queryOperator} :${firstKey}`, { [firstKey]: filterValue }]
+            return [`${tableColumn} ${queryOperator} :${safeParamName}`, { [safeParamName]: filterValue }]
         case Operator.MORE_THAN:
-            return [`${tableColumn} ${queryOperator} :${firstKey}`, { [firstKey]: filterValue }]
+            return [`${tableColumn} ${queryOperator} :${safeParamName}`, { [safeParamName]: filterValue }]
         case Operator.MORE_THAN_OR_EQUAL:
-            return [`${tableColumn} ${queryOperator} :${firstKey}`, { [firstKey]: filterValue }]
+            return [`${tableColumn} ${queryOperator} :${safeParamName}`, { [safeParamName]: filterValue }]
         default:
-            throw new Error(`Operator ${filter.operator} not supported`);
+            throw new ValidationError(`Operator ${filter.operator} not supported`);
     }   
 }
