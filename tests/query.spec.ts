@@ -1,8 +1,7 @@
 import { DataSource, EntityMetadata } from 'typeorm'
-import TestDataSource from "./utils/ormconfig"
-import { seed } from "./utils/seed"
+import { getSharedDatabase } from "./utils/shared-db"
 import { Organization, User } from './entities'
-import { ApiPagination, ApiQueryOptions, Operator, QueryParamsRaw, QueryParamsUpdate } from '../src'
+import { ApiPagination, ApiQueryOptions, Join, Operator, QueryParamsRaw, QueryParamsUpdate } from '../src'
 import { usersSeed } from './utils/seed-data'
 import { USER_ROLE } from './entities/user-roles'
 
@@ -13,9 +12,7 @@ function userEntityMeta(db: DataSource): EntityMetadata {
 }
 
 beforeAll(async () => {
-    db = TestDataSource
-    await db.initialize()
-    await seed(db)
+    db = await getSharedDatabase()
 })
 
 describe('Typeorm find options', () => {
@@ -410,7 +407,7 @@ describe('Typeorm query builder', () => {
 
     it('filter by username (url)', async () => {
         const url = '?filters=firstName~EQUAL~Amias&limit=10'
-        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeormQueryBuilder(db.getRepository(User))
+        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQueryBuilder(db.getRepository(User))
         const user = await query.getOne() as User
         
         expect(user.firstName).toBe(usersSeed[0].firstName)
@@ -425,7 +422,7 @@ describe('Typeorm query builder', () => {
                     value: 'Amias'
                 }
             ]
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const user = await query.getOne() as User
 
         expect(user.firstName).toBe(usersSeed[0].firstName)
@@ -440,7 +437,7 @@ describe('Typeorm query builder', () => {
                     value: 'Amias'
                 }
             ]
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const user = await query.getOneOrFail()
 
         expect(user.firstName).toBe(usersSeed[0].firstName)
@@ -455,7 +452,7 @@ describe('Typeorm query builder', () => {
                     value: 'NonExistentUser'
                 }
             ]
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         
         await expect(query.getOneOrFail()).rejects.toThrow()
     })
@@ -474,7 +471,7 @@ describe('Typeorm query builder', () => {
                     name: 'organization'
                 }
             ]
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const user = await query.getOne() as User
         expect(user.firstName).toBe(usersSeed[0].firstName)
         expect(user.organization).toBeDefined()
@@ -489,14 +486,13 @@ describe('Typeorm query builder', () => {
                     value: 'Amias'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         for (const user of users) {
             expect(user.firstName).not.toBe('Amias')
         }
     })
 
-    // TODO: Like, Between
 
     it('filter by firstName LIKE', async () => {
         const query = new ApiQueryOptions<User>({
@@ -507,12 +503,12 @@ describe('Typeorm query builder', () => {
                     value: 'Ami'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(1)
     })
 
-    it('filter by firstName BETWEEN', async () => {
+    it('filter by age BETWEEN', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -521,7 +517,7 @@ describe('Typeorm query builder', () => {
                     value: '20,22'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         for (const user of users) {
             expect(user.age).toBeGreaterThanOrEqual(20)
@@ -538,7 +534,7 @@ describe('Typeorm query builder', () => {
                     value: 'Amias'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(1)
     })
@@ -552,12 +548,12 @@ describe('Typeorm query builder', () => {
                     value: 'Amias,Perce'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(2)
     })
 
-    it('filter by mulitple firstName NOT_IN', async () => {
+    it('filter by multiple firstName NOT_IN', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -566,7 +562,7 @@ describe('Typeorm query builder', () => {
                     value: 'Amias,Perce'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(1)
     })
@@ -580,7 +576,7 @@ describe('Typeorm query builder', () => {
                     value: '22'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(1)
         expect(users[0].firstName).toBe('Amias')
@@ -595,14 +591,14 @@ describe('Typeorm query builder', () => {
                     value: '21'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(1)
         expect(users[0].firstName).toBe('Amias')
     })
 
 
-    it('filter by age LESS_THAN_OR_EQUAL', async () => {
+    it('filter by age LESS_THAN_OR_EQUAL - no result', async () => {
         const query = new ApiQueryOptions<User>({
             where: [
                 {
@@ -611,7 +607,7 @@ describe('Typeorm query builder', () => {
                     value: '20'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(0)
     })
@@ -626,11 +622,10 @@ describe('Typeorm query builder', () => {
                     value: '22'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(2)
     })
-    // TODO: Less than, Less than or equal
 
     it('list users, limit to 1', async () => {
         const query = new ApiQueryOptions<User>({
@@ -640,7 +635,7 @@ describe('Typeorm query builder', () => {
                     name: 'organization'
                 }
             ]
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const user = await query.getMany()
         expect(user.length).toBe(1)
         expect(user[0].organization).toBeDefined()
@@ -660,7 +655,7 @@ describe('Typeorm query builder', () => {
                     name: 'organization'
                 }
             ]
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const user = await query.getMany()
         expect(user.length).toBe(3)
         expect(user[0].organization).toBeDefined()
@@ -680,7 +675,7 @@ describe('Typeorm query builder', () => {
                     name: 'organization'
                 }
             ]
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const user = await query.getMany()
         expect(user.length).toBe(0)
     })
@@ -694,7 +689,7 @@ describe('Typeorm query builder', () => {
                     value: 'Tokyo'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(Organization))
+        }).toTypeOrmQueryBuilder(db.getRepository(Organization))
         const orgs = await query.getMany()
         expect(orgs.length).toBe(1)
         expect(orgs[0].address.city).toBe('Tokyo')
@@ -708,7 +703,7 @@ describe('Typeorm query builder', () => {
                     direction: 'ASC'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(3)
         expect(users[0].age).toBe(21)
@@ -730,7 +725,7 @@ describe('Typeorm query builder', () => {
                     value: '48'
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users[0].firstName).toBe('Perce')
     })
@@ -752,14 +747,14 @@ describe('Typeorm query builder', () => {
             relations: [{
                 name: 'organization'
             }]
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users[0].firstName).toBe('Perce')
     })
 
     it('multiple filter (with relation, url)', async () => {
         const url = '?filters=organization.name~EQUAL~Truper Corp.,age~EQUAL~48&relations=organization~JOIN'
-        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeormQueryBuilder(db.getRepository(User))
+        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users[0].firstName).toBe('Perce')
     })
@@ -773,7 +768,7 @@ describe('Typeorm query builder', () => {
                     value: USER_ROLE.EMPLOYEE
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(2)
         for (const user of users) {
@@ -790,7 +785,7 @@ describe('Typeorm query builder', () => {
                     value: USER_ROLE.MANAGER
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(1)
         expect(users[0].role).toBe(USER_ROLE.MANAGER)
@@ -799,7 +794,7 @@ describe('Typeorm query builder', () => {
 
     it('filter by role (url)', async () => {
         const url = `?filters=role~EQUAL~${USER_ROLE.EMPLOYEE}&limit=10`
-        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeormQueryBuilder(db.getRepository(User))
+        const query = new ApiQueryOptions<User>().fromUrl(url).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(2)
         for (const user of users) {
@@ -816,7 +811,7 @@ describe('Typeorm query builder', () => {
                     value: `${USER_ROLE.EMPLOYEE},${USER_ROLE.MANAGER}`
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(3)
     })
@@ -830,7 +825,7 @@ describe('Typeorm query builder', () => {
                     value: USER_ROLE.MANAGER
                 }
             ],
-        }).toTypeormQueryBuilder(db.getRepository(User))
+        }).toTypeOrmQueryBuilder(db.getRepository(User))
         const users = await query.getMany()
         expect(users.length).toBe(2)
         for (const user of users) {
@@ -850,7 +845,7 @@ describe('Pagination', () => {
         expect(pagination.currentPage).toBe(1)
         expect(pagination.totalPages).toBe(10)
         expect(pagination.total).toBe(100)
-        const url = pagination.url()
+        const url = pagination.toUrl()
         expect(url).toBe('?limit=10')
 
         const urlAfter = pagination.changePage(2)
@@ -878,7 +873,7 @@ describe('Pagination', () => {
         expect(pagination.totalPages).toBe(10)
         expect(pagination.total).toBe(100)
 
-        const url = pagination.url()
+        const url = pagination.toUrl()
         expect(url).toBe('?filters=organization.name~EQUAL~Truper Corp.&limit=10')
 
         const urlAfter = pagination.changePage(2)
@@ -938,7 +933,7 @@ describe('Pagination', () => {
         ])
         expect(pagination.currentPage).toBe(2)
 
-        const url = pagination.url()
+        const url = pagination.toUrl()
         expect(url).toBe('?filters=organization.name~EQUAL~Truper Corp.,age~EQUAL~50&limit=10&offset=10')
 
         pagination.loadAndMerge({
@@ -1026,8 +1021,7 @@ describe('Pagination', () => {
         ])
         expect(pagination.currentPage).toBe(2)
 
-        const url = pagination.url()
-        console.log(url)
+        const url = pagination.toUrl()
         expect(url).toBe('?filters=organization.name~EQUAL~Truper Corp.,age~EQUAL~50&limit=10&offset=10')
 
         pagination.loadAndMerge({
@@ -1038,4 +1032,148 @@ describe('Pagination', () => {
         expect(pagination.currentPage).toBe(1)
     })
 
+})
+
+describe('URL generation with relations', () => {
+    it('should not generate undefined join values in URL (constructor)', () => {
+        const params = new ApiQueryOptions<User>({
+            relations: [{ name: 'user' }],
+            where: [{
+                key: 'status',
+                value: 'pending',
+                operator: Operator.EQUAL,
+            }],
+        })
+
+        const url = params.toUrl()
+        expect(url).toBe('?filters=status~EQUAL~pending&relations=user~LEFT_SELECT&limit=10')
+        expect(url).not.toContain('undefined')
+    })
+
+    it('should not generate undefined join values in URL (load)', () => {
+        const params = new ApiQueryOptions<User>()
+        params.load({
+            relations: [{ name: 'user' }],
+            where: [{
+                key: 'status',
+                value: 'pending',
+                operator: Operator.EQUAL,
+            }],
+        })
+
+        const url = params.toUrl()
+        expect(url).toBe('?filters=status~EQUAL~pending&relations=user~LEFT_SELECT&limit=10')
+        expect(url).not.toContain('undefined')
+    })
+
+    it('should not generate undefined join values in URL (loadAndMerge)', () => {
+        const params = new ApiQueryOptions<User>()
+        params.loadAndMerge({
+            relations: [{ name: 'user' }],
+            where: [{
+                key: 'status',
+                value: 'pending',
+                operator: Operator.EQUAL,
+            }],
+        })
+
+        const url = params.toUrl()
+        expect(url).toBe('?filters=status~EQUAL~pending&relations=user~LEFT_SELECT&limit=10')
+        expect(url).not.toContain('undefined')
+    })
+
+    it('should preserve explicit join values in URL', () => {
+        const params = new ApiQueryOptions<User>({
+            relations: [{ name: 'user', join: Join.INNER }],
+            where: [{
+                key: 'status',
+                value: 'pending',
+                operator: Operator.EQUAL,
+            }],
+        })
+
+        const url = params.toUrl()
+        expect(url).toBe('?filters=status~EQUAL~pending&relations=user~INNER&limit=10')
+    })
+
+    it('should handle multiple relations with mixed join types', () => {
+        const params = new ApiQueryOptions<User>({
+            relations: [
+                { name: 'user' },
+                { name: 'organization', join: Join.INNER },
+                { name: 'address' }
+            ],
+            where: [{
+                key: 'status',
+                value: 'active',
+                operator: Operator.EQUAL,
+            }],
+        })
+
+        const url = params.toUrl()
+        expect(url).toBe('?filters=status~EQUAL~active&relations=user~LEFT_SELECT,organization~INNER,address~LEFT_SELECT&limit=10')
+        expect(url).not.toContain('undefined')
+    })
+
+    it('should maintain consistency in round-trip URL conversion', () => {
+        const originalParams = new ApiQueryOptions<User>({
+            relations: [{ name: 'user' }],
+            where: [{
+                key: 'status',
+                value: 'pending',
+                operator: Operator.EQUAL,
+            }],
+        })
+
+        const url = originalParams.toUrl()
+        const parsedParams = new ApiQueryOptions<User>().fromUrl(url)
+        const roundTripUrl = parsedParams.toUrl()
+
+        expect(roundTripUrl).toBe(url)
+        expect(roundTripUrl).not.toContain('undefined')
+    })
+})
+
+describe('ApiPagination URL methods', () => {
+    it('should use toUrl() method consistently', () => {
+        const pagination = new ApiPagination<User>(
+            new ApiQueryOptions<User>({
+                relations: [{ name: 'users' }],
+                limit: 10,
+                orderBy: [{ key: 'modifiedAt', direction: 'DESC' }],
+            })
+        )
+
+        const url = pagination.toUrl()
+        expect(url).toBe('?relations=users~LEFT_SELECT&orderBy=modifiedAt~DESC&limit=10')
+        expect(url).not.toContain('undefined')
+    })
+
+    it('should maintain backward compatibility with toUrl() method', () => {
+        const pagination = new ApiPagination<User>(
+            new ApiQueryOptions<User>({
+                relations: [{ name: 'users' }],
+                limit: 10,
+                orderBy: [{ key: 'modifiedAt', direction: 'DESC' }],
+            })
+        )
+
+        const urlOld = pagination.toUrl()
+        const urlNew = pagination.toUrl()
+        expect(urlOld).toBe(urlNew)
+        expect(urlOld).not.toContain('undefined')
+    })
+
+    it('should work correctly with changePage', () => {
+        const pagination = new ApiPagination<User>(
+            new ApiQueryOptions<User>({
+                relations: [{ name: 'users' }],
+                limit: 10,
+            })
+        )
+
+        const pageUrl = pagination.changePage(2)
+        expect(pageUrl).toBe('?relations=users~LEFT_SELECT&limit=10&offset=10')
+        expect(pageUrl).not.toContain('undefined')
+    })
 })

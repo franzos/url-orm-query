@@ -7,9 +7,8 @@ const connection = () => {
         url: 'postgres://postgres:postgres@url_orm_query_postgres:5432/dev',
         dropSchema: true,
         synchronize: true,
-        migrationsRun: true,
+        migrationsRun: false,  // Disable migrations for tests
         entities: [User, Organization],
-        migrations: [__dirname + '../migrations/*.ts'],
     })
 }
 
