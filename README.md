@@ -52,6 +52,16 @@ Depends on whether you use find options (fo) or query builder (qb).
 - Type safety
 - Validation
 
+## Features
+
+- **Basic Filtering**: Standard WHERE conditions with various operators
+- **OR/AND Groups**: Complex queries with grouped conditions using OR/AND logic
+- **Relations**: Join tables with different join types
+- **Sorting**: Order by multiple fields
+- **Pagination**: Limit/offset support
+- **URL Serialization**: Convert queries to/from URL parameters
+- **TypeORM Integration**: Works with both FindOptions and QueryBuilder
+
 # Usage
 
 Typeorm supports two approaches:
@@ -149,6 +159,44 @@ Simple filters (default EQUAL) and relations (default LEFT_SELECT)
 ?filters=firstName~Some
 &relations=organization
 ```
+
+## OR/AND Query Groups
+
+Complex queries with OR logic using `filterGroups`:
+
+```typescript
+// Programmatic usage
+const query = new ApiQueryOptions<User>()
+    .addWhereGroup({
+        logic: 'OR',
+        conditions: [
+            { key: 'role', operator: Operator.EQUAL, value: 'admin' },
+            { key: 'role', operator: Operator.EQUAL, value: 'moderator' }
+        ]
+    });
+
+// Generates: WHERE (role = 'admin' OR role = 'moderator')
+```
+
+URL format for OR groups:
+
+```bash
+# Single OR group
+?filterGroups=OR~role~EQUAL~admin,role~EQUAL~moderator
+
+# Multiple groups (separated by |)
+?filterGroups=OR~role~EQUAL~admin,role~EQUAL~moderator|AND~status~EQUAL~active,verified~EQUAL~true
+
+# Combined with regular filters
+?filters=age~MORE_THAN~18&filterGroups=OR~department~EQUAL~IT,department~EQUAL~HR
+```
+
+This generates SQL like:
+```sql
+WHERE age > 18 AND (department = 'IT' OR department = 'HR')
+```
+
+**Important**: OR/AND groups only work with the **Query Builder** approach (`toTypeOrmQueryBuilder()`). They are not supported with Find Options (`toTypeOrmQuery()`) due to TypeORM API limitations. Use Query Builder for complex queries with OR logic.
 
 ## Pagination
 

@@ -1,7 +1,7 @@
 import { Join } from "./enums/join";
 import { columnMeta, operatorValue, queryBuilderAssembly, splitQueryKey } from "./operators";
 import { QueryParamsBuilder } from "./query-params";
-import { EntityMetadata, FindManyOptions, Repository } from "./typeorm-interfaces";
+import { Brackets, EntityMetadata, FindManyOptions, Repository } from "./typeorm-interfaces";
 import { validateFieldExists, ValidationError } from "./validation";
 
 export class QueryBuilder<T> {
@@ -14,6 +14,10 @@ export class QueryBuilder<T> {
      * @returns TypeORM find options
      */
     static toFindOptions<T>(params: QueryParamsBuilder<T>, entityMeta: EntityMetadata): FindManyOptions<T> {
+        if (params.whereGroups.length > 0) {
+            throw new ValidationError("OR/AND groups are only supported with QueryBuilder. Use toTypeOrmQueryBuilder() instead of toTypeOrmQuery() for complex queries.");
+        }
+
         let query: FindManyOptions<T> = {};
         
         if (params.where.length > 0) {
@@ -87,7 +91,7 @@ export class QueryBuilder<T> {
         
         if (params.where.length > 0) {
             for (let i = 0; i < params.where.length; i++) {
-                const queryFunction = i === 0 ? 'where' : 'andWhere'
+                const queryFunction = i === 0 && params.whereGroups.length === 0 ? 'where' : 'andWhere'
 
                 const queryParam = queryBuilderAssembly(
                     repo,
@@ -99,6 +103,28 @@ export class QueryBuilder<T> {
             }
         }
         
+        if (params.whereGroups.length > 0) {
+            for (let groupIndex = 0; groupIndex < params.whereGroups.length; groupIndex++) {
+                const group = params.whereGroups[groupIndex]
+                const queryFunction = params.where.length === 0 && groupIndex === 0 ? 'where' : 'andWhere'
+
+                query[queryFunction](Brackets(qb => {
+                    for (let condIndex = 0; condIndex < group.conditions.length; condIndex++) {
+                        const condition = group.conditions[condIndex]
+                        const innerFunction = condIndex === 0 ? 'where' : group.logic.toLowerCase() + 'Where' as 'orWhere' | 'andWhere'
+
+                        const queryParam = queryBuilderAssembly(
+                            repo,
+                            condition,
+                            groupIndex * 1000 + condIndex
+                        )
+
+                        qb[innerFunction](queryParam[0], queryParam[1])
+                    }
+                }))
+            }
+        }
+
         if (params.relations.length > 0) {
             for (const relation of params.relations) {
                 const name = relation.name as string

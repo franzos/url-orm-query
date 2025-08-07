@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.1] - 2025-08-07
+
+### Added
+- OR/AND query groups support with `filterGroups` parameter for complex conditions
+
 ## [0.2.0] - 2025-08-01
 
 ### Added

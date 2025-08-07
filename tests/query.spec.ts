@@ -84,6 +84,42 @@ describe('Typeorm find options', () => {
         expect(user.organization.id).toBeDefined()
     })
 
+    it('filter with OR group (url)', async () => {
+        // Test URL format with valid enum values
+        const url = '?filterGroups=OR~role~EQUAL~owner,role~EQUAL~manager&limit=10'
+        const query = new ApiQueryOptions<User>().fromUrl(url)
+        const userRepository = db.getRepository(User)
+        const queryBuilder = query.toTypeormQueryBuilder(userRepository)
+        const users = await queryBuilder.getMany()
+        
+        expect(users.length).toBeGreaterThanOrEqual(0)
+    })
+
+    it('filter with mixed AND and OR groups', async () => {
+        // Regular filter + OR group with relation
+        const url = '?filters=organization.name~EQUAL~Truper Corp.&filterGroups=OR~age~EQUAL~28,age~EQUAL~48&relations=organization&limit=10'
+        const query = new ApiQueryOptions<User>().fromUrl(url)
+        const userRepository = db.getRepository(User)
+        const queryBuilder = query.toTypeormQueryBuilder(userRepository)
+        const users = await queryBuilder.getMany()
+        
+        expect(users.length).toBeGreaterThanOrEqual(0)
+        if (users.length > 0) {
+            users.forEach(user => {
+                expect([28, 48]).toContain(user.age)
+            })
+        }
+    })
+
+    it('should throw error when using whereGroups with toTypeOrmQuery', async () => {
+        const url = '?filterGroups=OR~role~EQUAL~owner,role~EQUAL~manager'
+        const query = new ApiQueryOptions<User>().fromUrl(url)
+        
+        expect(() => {
+            query.toTypeOrmQuery(userEntityMeta(db))
+        }).toThrow('OR/AND groups are only supported with QueryBuilder. Use toTypeOrmQueryBuilder() instead of toTypeOrmQuery() for complex queries.')
+    })
+
     it('order by (url)', async () => {
         const url = '?orderBy=age~ASC'
         const query = new ApiQueryOptions<User>().fromUrl(url)

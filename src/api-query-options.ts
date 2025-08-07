@@ -1,6 +1,6 @@
 import { Join } from "./enums/join";
 import { QueryBuilder } from "./query-builder";
-import { QueryParams, QueryParamsBuilder, QueryParamsRaw, QueryParamsUpdate, Relation, Where, WhereWithRequire } from "./query-params";
+import { QueryParams, QueryParamsBuilder, QueryParamsRaw, QueryParamsUpdate, Relation, Where, WhereWithRequire, WhereGroup } from "./query-params";
 import { QueryParser } from "./query-parser";
 import { EntityMetadata, Repository } from "./typeorm-interfaces";
 import { validateRelation, validateWhere, validateOrderBy, validateLimit, validateOffset } from "./validation";
@@ -11,6 +11,7 @@ export class ApiQueryOptions<T> {
     constructor(params?: QueryParams<T>) {
         this.params = {
             where: [],
+            whereGroups: [],
             relations: [],
             limit: 10,
             offset: 0,
@@ -43,6 +44,7 @@ export class ApiQueryOptions<T> {
 
         this.params = {
             where: params.where || [],
+            whereGroups: params.whereGroups || [],
             relations: params.relations || [],
             limit: params.limit || 10,
             offset: params.offset || 0,
@@ -120,6 +122,12 @@ export class ApiQueryOptions<T> {
         return this
     }
 
+    addWhereGroup(group: WhereGroup<T>) {
+        group.conditions.forEach(cond => validateWhere(cond));
+        this.params.whereGroups.push(group);
+        return this
+    }
+
     setLimit(limit: number) {
         validateLimit(limit);
         this.params.limit = limit;
@@ -145,6 +153,11 @@ export class ApiQueryOptions<T> {
         let params = []
         if (this.params.where.length > 0) {
             params.push(`filters=${this.params.where.map(filter => `${String(filter.key)}~${filter.operator}~${filter.value}`).join(',')}`)
+        }
+        if (this.params.whereGroups.length > 0) {
+            params.push(`filterGroups=${this.params.whereGroups.map(group => 
+                `${group.logic}~${group.conditions.map(cond => `${String(cond.key)}~${cond.operator}~${cond.value}`).join(',')}`
+            ).join('|')}`)
         }
         if (this.params.relations.length > 0) {
             params.push(`relations=${this.params.relations.map(relation => `${String(relation.name)}~${relation.join ?? Join.LEFT_SELECT}`).join(',')}`);

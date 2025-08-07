@@ -7,6 +7,11 @@ export interface Where<T> {
     operator: Operator;
 }
 
+export interface WhereGroup<T> {
+    logic: 'AND' | 'OR';
+    conditions: Where<T>[];
+}
+
 /**
  * This exists primarily for front-end usage
  * - You might want to make a couple of filters required on load
@@ -28,6 +33,7 @@ export interface OrderBy<T> {
 
 export interface QueryParams<T> {
     where?: WhereWithRequire<T>[];
+    whereGroups?: WhereGroup<T>[];
     relations?: Relation<T>[];
     limit?: number;
     offset?: number;
@@ -36,6 +42,7 @@ export interface QueryParams<T> {
 
 export interface QueryParamsBuilder<T> extends QueryParams<T> {
     where: WhereWithRequire<T>[];
+    whereGroups: WhereGroup<T>[];
     relations: Relation<T>[];
     limit: number;
     offset: number;
@@ -59,6 +66,7 @@ export interface QueryParamsUpdate<T> extends QueryParams<T> {
  */
 export interface QueryParamsRaw {
     filters?: string;
+    filterGroups?: string;
     relations?: string;
     orderBy?: string;
     limit?: string;

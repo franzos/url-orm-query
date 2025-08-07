@@ -32,6 +32,7 @@ export interface Repository<T> {
 export interface QueryBuilder<T> {
     where(condition: string | any, parameters?: any): QueryBuilder<T>;
     andWhere(condition: string | any, parameters?: any): QueryBuilder<T>;
+    orWhere(condition: string | any, parameters?: any): QueryBuilder<T>;
     leftJoin(property: string, alias: string): QueryBuilder<T>;
     leftJoinAndSelect(property: string, alias: string): QueryBuilder<T>;
     innerJoin(property: string, alias: string): QueryBuilder<T>;
@@ -44,6 +45,17 @@ export interface QueryBuilder<T> {
     getMany(): Promise<T[]>;
     getManyAndCount(): Promise<[T[], number]>;
     getCount(): Promise<number>;
+}
+
+export interface Brackets {
+    (qb: QueryBuilder<any>): void;
+}
+
+export function Brackets(whereFunction: (qb: QueryBuilder<any>) => void): any {
+    return {
+        '@instanceof': Symbol.for('Brackets'),
+        whereFactory: whereFunction
+    };
 }
 
 // TypeORM-compatible FindOperator implementation without importing TypeORM

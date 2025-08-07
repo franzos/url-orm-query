@@ -5,6 +5,7 @@ export class QueryParser<T> {
     static fromUrl<T>(queryString: string): QueryParamsBuilder<T> {
         const params: QueryParamsBuilder<T> = {
             where: [],
+            whereGroups: [],
             relations: [],
             limit: 10,
             offset: 0,
@@ -16,6 +17,17 @@ export class QueryParser<T> {
             switch (key) {
                 case 'filters':
                     params.where = parseFilters<T>(value)
+                    break
+                case 'filterGroups':
+                    // Parse group format: OR~key~op~value,key~op~value|AND~key~op~value
+                    const groups = value.split('|');
+                    params.whereGroups = groups.map(groupStr => {
+                        const parts = groupStr.split('~', 2);
+                        const logic = parts[0] as 'AND' | 'OR';
+                        const conditionsStr = groupStr.substring(parts[0].length + 1);
+                        const conditions = parseFilters<T>(conditionsStr);
+                        return { logic, conditions };
+                    });
                     break
                 case 'relations':
                     params.relations = parseRelations<T>(value)
@@ -45,6 +57,7 @@ export class QueryParser<T> {
     static fromController<T>(queryData: QueryParamsRaw): QueryParamsBuilder<T> {
         const params: QueryParamsBuilder<T> = {
             where: [],
+            whereGroups: [],
             relations: [],
             limit: 10,
             offset: 0,
@@ -57,6 +70,16 @@ export class QueryParser<T> {
 
         if (queryData.filters) {
             params.where = parseFilters<T>(queryData.filters)
+        }
+        if (queryData.filterGroups) {
+            const groups = queryData.filterGroups.split('|');
+            params.whereGroups = groups.map(groupStr => {
+                const parts = groupStr.split('~', 2);
+                const logic = parts[0] as 'AND' | 'OR';
+                const conditionsStr = groupStr.substring(parts[0].length + 1);
+                const conditions = parseFilters<T>(conditionsStr);
+                return { logic, conditions };
+            });
         }
         if (queryData.relations) {
             params.relations = parseRelations<T>(queryData.relations)
