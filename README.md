@@ -2,7 +2,7 @@
 
 This library makes it easy to pass query params from front-end, via URL params, to a TypeORM backend. Tested with TypeORM `^0.3.25`.
 
-**Version:** 0.2.0
+**Version:** 0.2.1
 
 **Important: This is just an old toy-project that shouldn't be used in production.**
 
@@ -61,6 +61,7 @@ Depends on whether you use find options (fo) or query builder (qb).
 - **Pagination**: Limit/offset support
 - **URL Serialization**: Convert queries to/from URL parameters
 - **TypeORM Integration**: Works with both FindOptions and QueryBuilder
+- **Query Restrictions**: Whitelist/blacklist security controls for fields and relations
 
 # Usage
 
@@ -197,6 +198,65 @@ WHERE age > 18 AND (department = 'IT' OR department = 'HR')
 ```
 
 **Important**: OR/AND groups only work with the **Query Builder** approach (`toTypeOrmQueryBuilder()`). They are not supported with Find Options (`toTypeOrmQuery()`) due to TypeORM API limitations. Use Query Builder for complex queries with OR logic.
+
+## Query Restrictions
+
+Control what fields and relations users can query using whitelist or blacklist restrictions:
+
+```typescript
+// Whitelist approach - only allow specific fields
+const restrictions = {
+  mode: 'whitelist',
+  whereFields: ['id', 'name', 'email', 'organization.name'],
+  relations: ['organization'],
+  strict: false // silently filter vs throw errors
+};
+
+// Apply restrictions from URL
+const query = new ApiQueryOptions<User>()
+  .fromUrl(url, restrictions)
+  .toTypeOrmQuery(entityMeta);
+
+// Or use in constructor
+const query = new ApiQueryOptions<User>(params, restrictions);
+
+// Blacklist approach - block sensitive fields
+const restrictions = {
+  mode: 'blacklist',
+  whereFields: ['password', 'ssn', 'internalNotes'],
+  relations: ['auditLogs'],
+  strict: true // throw RestrictionError on violation
+};
+```
+
+**Modes:**
+- **Whitelist**: Only allow specified fields/relations
+- **Blacklist**: Block specified fields/relations, allow everything else
+- **Strict**: Throw `RestrictionError` on violations vs silently filtering
+
+**Error Format:**
+When `strict: true`, violations throw a detailed `RestrictionError`:
+
+```typescript
+{
+  code: "blacklisted", // or "not_whitelisted" or "mixed_restrictions"
+  message: "The following fields are blacklisted: password, ssn",
+  errors: [
+    {
+      field: "password",
+      type: "whereField", // or "relation"
+      code: "blacklisted",
+      message: "Field 'password' is blacklisted"
+    },
+    {
+      field: "ssn", 
+      type: "whereField",
+      code: "blacklisted",
+      message: "Field 'ssn' is blacklisted"
+    }
+  ]
+}
+```
 
 ## Pagination
 

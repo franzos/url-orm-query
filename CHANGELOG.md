@@ -4,6 +4,7 @@
 
 ### Added
 - OR/AND query groups support with `filterGroups` parameter for complex conditions
+- Query restrictions system with whitelist/blacklist modes for security
 
 ## [0.2.0] - 2025-08-01
 

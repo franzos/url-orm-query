@@ -1,6 +1,7 @@
 import { Join } from "./enums/join";
 import { Operator } from "./enums/operator";
-import { OrderBy, Relation, Where } from "./query-params";
+import { OrderBy, Relation, Where, WhereGroup } from "./query-params";
+import { QueryRestrictions, RestrictionError, RestrictionErrorDetail } from "./query-restrictions";
 import { EntityMetadata } from "./typeorm-interfaces";
 
 export class ValidationError extends Error {
@@ -141,4 +142,196 @@ export function validateOffset(offset: number): void {
     if (typeof offset !== 'number' || offset < 0 || !Number.isInteger(offset)) {
         throw new ValidationError('Offset must be a non-negative integer');
     }
+}
+
+export function collectWhereFieldRestrictionErrors(fields: string[], restrictions?: QueryRestrictions): RestrictionErrorDetail[] {
+    if (!restrictions || !restrictions.whereFields) {
+        return [];
+    }
+
+    const errors: RestrictionErrorDetail[] = [];
+    
+    for (const field of fields) {
+        const isAllowed = restrictions.mode === 'whitelist' 
+            ? restrictions.whereFields.includes(field)
+            : !restrictions.whereFields.includes(field);
+
+        if (!isAllowed) {
+            errors.push(RestrictionError.createFieldError(field, 'whereField', restrictions.mode));
+        }
+    }
+
+    return errors;
+}
+
+export function collectRelationRestrictionErrors(relationNames: string[], restrictions?: QueryRestrictions): RestrictionErrorDetail[] {
+    if (!restrictions || !restrictions.relations) {
+        return [];
+    }
+
+    const errors: RestrictionErrorDetail[] = [];
+    
+    for (const relationName of relationNames) {
+        const isAllowed = restrictions.mode === 'whitelist'
+            ? restrictions.relations.includes(relationName)
+            : !restrictions.relations.includes(relationName);
+
+        if (!isAllowed) {
+            errors.push(RestrictionError.createFieldError(relationName, 'relation', restrictions.mode));
+        }
+    }
+
+    return errors;
+}
+
+export function validateWhereFieldRestrictions(field: string, restrictions?: QueryRestrictions): void {
+    const errors = collectWhereFieldRestrictionErrors([field], restrictions);
+    if (errors.length > 0 && restrictions?.strict) {
+        throw RestrictionError.fromErrors(errors);
+    }
+}
+
+export function validateRelationRestrictions(relationName: string, restrictions?: QueryRestrictions): void {
+    const errors = collectRelationRestrictionErrors([relationName], restrictions);
+    if (errors.length > 0 && restrictions?.strict) {
+        throw RestrictionError.fromErrors(errors);
+    }
+}
+
+export function isWhereFieldAllowed(field: string, restrictions?: QueryRestrictions): boolean {
+    if (!restrictions || !restrictions.whereFields) {
+        return true;
+    }
+
+    return restrictions.mode === 'whitelist'
+        ? restrictions.whereFields.includes(field)
+        : !restrictions.whereFields.includes(field);
+}
+
+export function isRelationAllowed(relationName: string, restrictions?: QueryRestrictions): boolean {
+    if (!restrictions || !restrictions.relations) {
+        return true;
+    }
+
+    return restrictions.mode === 'whitelist'
+        ? restrictions.relations.includes(relationName)
+        : !restrictions.relations.includes(relationName);
+}
+
+export function applyWhereRestrictions<T>(where: Where<T>[], restrictions?: QueryRestrictions): Where<T>[] {
+    if (!restrictions) {
+        return where;
+    }
+
+    return where.filter(filter => isWhereFieldAllowed(safeStringConversion(filter.key), restrictions));
+}
+
+export function applyRelationRestrictions<T>(relations: Relation<T>[], restrictions?: QueryRestrictions): Relation<T>[] {
+    if (!restrictions) {
+        return relations;
+    }
+
+    return relations.filter(relation => isRelationAllowed(safeStringConversion(relation.name), restrictions));
+}
+
+export function applyWhereGroupRestrictions<T>(whereGroups: WhereGroup<T>[], restrictions?: QueryRestrictions): WhereGroup<T>[] {
+    if (!restrictions) {
+        return whereGroups;
+    }
+
+    return whereGroups.map(group => ({
+        ...group,
+        conditions: applyWhereRestrictions(group.conditions, restrictions)
+    })).filter(group => group.conditions.length > 0);
+}
+
+export function validateAllRestrictions<T>(
+    whereFields: string[],
+    relations: string[], 
+    restrictions?: QueryRestrictions
+): void {
+    if (!restrictions || !restrictions.strict) {
+        return;
+    }
+
+    const allErrors: RestrictionErrorDetail[] = [];
+    
+    // Collect WHERE field errors
+    const whereErrors = collectWhereFieldRestrictionErrors(whereFields, restrictions);
+    allErrors.push(...whereErrors);
+    
+    // Collect relation errors
+    const relationErrors = collectRelationRestrictionErrors(relations, restrictions);
+    allErrors.push(...relationErrors);
+    
+    // Throw aggregated error if any violations found
+    if (allErrors.length > 0) {
+        throw RestrictionError.fromErrors(allErrors);
+    }
+}
+
+function safeStringConversion(value: any): string {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+    }
+    if (typeof value === 'symbol') {
+        return value.toString();
+    }
+    if (value === null || value === undefined) {
+        return String(value);
+    }
+    // For objects, try to get a reasonable string representation
+    if (typeof value === 'object') {
+        if (value.toString && typeof value.toString === 'function') {
+            const result = value.toString();
+            if (result !== '[object Object]') {
+                return result;
+            }
+        }
+        // Fallback to JSON stringification
+        try {
+            return JSON.stringify(value);
+        } catch {
+            return '[object Object]';
+        }
+    }
+    return String(value);
+}
+
+export function validateAndApplyRestrictions<T>(
+    where: Where<T>[],
+    whereGroups: WhereGroup<T>[],
+    relations: Relation<T>[],
+    restrictions?: QueryRestrictions
+): {
+    where: Where<T>[];
+    whereGroups: WhereGroup<T>[];
+    relations: Relation<T>[];
+} {
+    if (!restrictions) {
+        return { where, whereGroups, relations };
+    }
+
+    // Collect all fields in single pass with safe conversion
+    const allWhereFields: string[] = [];
+    where.forEach(w => allWhereFields.push(safeStringConversion(w.key)));
+    whereGroups.forEach(group => 
+        group.conditions.forEach(c => allWhereFields.push(safeStringConversion(c.key)))
+    );
+    const allRelations = relations.map(r => safeStringConversion(r.name));
+
+    // Validate if strict mode
+    if (restrictions.strict) {
+        validateAllRestrictions(allWhereFields, allRelations, restrictions);
+    }
+
+    // Apply filtering
+    return {
+        where: applyWhereRestrictions(where, restrictions),
+        whereGroups: applyWhereGroupRestrictions(whereGroups, restrictions),
+        relations: applyRelationRestrictions(relations, restrictions)
+    };
 }

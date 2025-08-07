@@ -1,8 +1,10 @@
 import { parseFilters, parseOrderBy, parseRelations } from "./extract";
 import { QueryParamsBuilder, QueryParamsRaw } from "./query-params";
+import { QueryRestrictions } from "./query-restrictions";
+import { validateAndApplyRestrictions } from "./validation";
 
 export class QueryParser<T> {
-    static fromUrl<T>(queryString: string): QueryParamsBuilder<T> {
+    static fromUrl<T>(queryString: string, restrictions?: QueryRestrictions): QueryParamsBuilder<T> {
         const params: QueryParamsBuilder<T> = {
             where: [],
             whereGroups: [],
@@ -16,7 +18,7 @@ export class QueryParser<T> {
         for (const [key, value] of urlParams) {
             switch (key) {
                 case 'filters':
-                    params.where = parseFilters<T>(value)
+                    params.where = parseFilters<T>(value);
                     break
                 case 'filterGroups':
                     // Parse group format: OR~key~op~value,key~op~value|AND~key~op~value
@@ -30,7 +32,7 @@ export class QueryParser<T> {
                     });
                     break
                 case 'relations':
-                    params.relations = parseRelations<T>(value)
+                    params.relations = parseRelations<T>(value);
                     break
                 case 'orderBy':
                     params.orderBy = parseOrderBy<T>(value)
@@ -51,10 +53,24 @@ export class QueryParser<T> {
                     break
             }
         }
+        
+        // Apply restrictions after parsing (optimized single pass)
+        if (restrictions) {
+            const filtered = validateAndApplyRestrictions(
+                params.where,
+                params.whereGroups,
+                params.relations,
+                restrictions
+            );
+            params.where = filtered.where;
+            params.whereGroups = filtered.whereGroups;
+            params.relations = filtered.relations;
+        }
+        
         return params;
     }
 
-    static fromController<T>(queryData: QueryParamsRaw): QueryParamsBuilder<T> {
+    static fromController<T>(queryData: QueryParamsRaw, restrictions?: QueryRestrictions): QueryParamsBuilder<T> {
         const params: QueryParamsBuilder<T> = {
             where: [],
             whereGroups: [],
@@ -69,7 +85,7 @@ export class QueryParser<T> {
         }
 
         if (queryData.filters) {
-            params.where = parseFilters<T>(queryData.filters)
+            params.where = parseFilters<T>(queryData.filters);
         }
         if (queryData.filterGroups) {
             const groups = queryData.filterGroups.split('|');
@@ -82,7 +98,7 @@ export class QueryParser<T> {
             });
         }
         if (queryData.relations) {
-            params.relations = parseRelations<T>(queryData.relations)
+            params.relations = parseRelations<T>(queryData.relations);
         }
         if (queryData.orderBy) {
             params.orderBy = parseOrderBy<T>(queryData.orderBy)
@@ -101,6 +117,20 @@ export class QueryParser<T> {
             }
             params.offset = parsedOffset;
         }
+        
+        // Apply restrictions after parsing (optimized single pass)
+        if (restrictions) {
+            const filtered = validateAndApplyRestrictions(
+                params.where,
+                params.whereGroups,
+                params.relations,
+                restrictions
+            );
+            params.where = filtered.where;
+            params.whereGroups = filtered.whereGroups;
+            params.relations = filtered.relations;
+        }
+        
         return params;
     }
 }
